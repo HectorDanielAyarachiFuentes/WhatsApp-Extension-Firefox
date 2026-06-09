@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración de WhatsApp Sidebar</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <img src="../icons/WhatsApp.svg" alt="WhatsApp Logo" class="logo">
+      <h1>Configuración</h1>
+    </header>
+
+    <main>
+      <section class="card settings-section">
+        <h2>Notificaciones</h2>
+        
+        <div class="setting-item">
+          <div class="setting-info">
+            <h3>Silenciar Sonidos</h3>
+            <p>Desactiva el tono de notificación al recibir mensajes nuevos.</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="muteSoundToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <h3>Ocultar Notificaciones de Escritorio</h3>
+            <p>No muestra el cuadro emergente en la pantalla, pero el ícono seguirá actualizándose.</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="muteNotifsToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card about-section">
+        <h2>Sobre el Creador</h2>
+        <div class="profile-card">
+          <div class="avatar-placeholder">
+            <span>HD</span>
+          </div>
+          <div class="profile-info">
+            <h3>Hector Daniel Ayarachi Fuentes</h3>
+            <p>Desarrollador de Extensiones Web</p>
+            <a href="https://github.com/HectorDanielAyarachiFuentes" target="_blank" class="github-btn">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+              Visitar GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>WhatsApp Sidebar &copy; 2026. No afiliado a Meta ni a WhatsApp LLC.</p>
+    </footer>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

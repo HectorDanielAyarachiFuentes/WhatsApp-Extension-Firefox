@@ -30,6 +30,22 @@ browser.browserAction.onClicked.addListener(() => {
 // ===== 3. Sistema de notificaciones de mensajes no leídos =====
 let unreadChats = [];
 let previousUnreadNames = [];
+let isSoundMuted = false;
+let isNotifMuted = false;
+
+// Cargar preferencias iniciales
+browser.storage.local.get(['isSoundMuted', 'isNotifMuted']).then((res) => {
+  isSoundMuted = res.isSoundMuted || false;
+  isNotifMuted = res.isNotifMuted || false;
+});
+
+// Escuchar cambios en la configuración
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local') {
+    if (changes.isSoundMuted !== undefined) isSoundMuted = changes.isSoundMuted.newValue;
+    if (changes.isNotifMuted !== undefined) isNotifMuted = changes.isNotifMuted.newValue;
+  }
+});
 
 const ICON_NORMAL = 'icons/WhatsApp.svg';
 
@@ -106,25 +122,27 @@ function notifyNewContacts(oldChats, newChats) {
     const hasMore = oldChat && chat.count > oldChat.count;
 
     if (isNew || hasMore) {
-      if (!playedSound) {
+      if (!playedSound && !isSoundMuted) {
         playWhatsAppSound();
         playedSound = true;
       }
 
-      const notifId = `wa-${chat.name.replace(/\s+/g, '-')}`;
-      const timeStr = chat.time ? ` · ${chat.time}` : '';
-      const previewStr = chat.preview ? `\n📝 "${chat.preview}"` : '';
+      if (!isNotifMuted) {
+        const notifId = `wa-${chat.name.replace(/\s+/g, '-')}`;
+        const timeStr = chat.time ? ` · ${chat.time}` : '';
+        const previewStr = chat.preview ? `\n📝 "${chat.preview}"` : '';
 
-      browser.notifications.create(notifId, {
-        type: 'basic',
-        iconUrl: browser.runtime.getURL(ICON_NORMAL),
-        title: `💬 ${chat.name}${timeStr}`,
-        message: `${chat.count} mensaje(s) sin leer${previewStr}`
-      });
+        browser.notifications.create(notifId, {
+          type: 'basic',
+          iconUrl: browser.runtime.getURL(ICON_NORMAL),
+          title: `💬 ${chat.name}${timeStr}`,
+          message: `${chat.count} mensaje(s) sin leer${previewStr}`
+        });
 
-      setTimeout(() => {
-        browser.notifications.clear(notifId);
-      }, 8000);
+        setTimeout(() => {
+          browser.notifications.clear(notifId);
+        }, 8000);
+      }
     }
   });
 
@@ -150,5 +168,32 @@ browser.notifications.onClicked.addListener((notifId) => {
   if (notifId.startsWith('wa-')) {
     browser.sidebarAction.open();
     browser.notifications.clear(notifId);
+  }
+});
+
+// ===== 4. Menú contextual (Clic derecho en el icono) =====
+browser.menus.create({
+  id: "open-full",
+  title: "Abrir WhatsApp en pestaña completa",
+  contexts: ["browser_action"]
+});
+
+browser.menus.create({
+  id: "separator-1",
+  type: "separator",
+  contexts: ["browser_action"]
+});
+
+browser.menus.create({
+  id: "open-settings",
+  title: "Configuración y Sobre mí",
+  contexts: ["browser_action"]
+});
+
+browser.menus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "open-full") {
+    browser.tabs.create({ url: "https://web.whatsapp.com/" });
+  } else if (info.menuItemId === "open-settings") {
+    browser.runtime.openOptionsPage();
   }
 });
