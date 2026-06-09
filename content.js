@@ -23,10 +23,10 @@
   }, 2000);
 
   function init() {
-    // Escanear cada 3 segundos
-    setInterval(scanUnreadChats, 3000);
-    // Escaneo inicial
-    setTimeout(scanUnreadChats, 1000);
+    // Escanear cada 500ms para que sea "instantáneo"
+    setInterval(scanUnreadChats, 500);
+    // Escaneo inicial rápido
+    setTimeout(scanUnreadChats, 200);
   }
 
   function scanUnreadChats() {

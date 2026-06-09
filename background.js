@@ -72,14 +72,45 @@ browser.runtime.onMessage.addListener((message, sender) => {
   }
 });
 
+// ===== Sonido de notificación =====
+function playWhatsAppSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    // Tono "pop" estilo WhatsApp corto y agudo
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  } catch(e) {
+    console.error("Audio no soportado:", e);
+  }
+}
+
 // ===== Notificaciones de escritorio =====
 function notifyNewContacts(oldChats, newChats) {
+  let playedSound = false;
   newChats.forEach(chat => {
     const oldChat = oldChats.find(c => c.name === chat.name);
     const isNew = !oldChat;
     const hasMore = oldChat && chat.count > oldChat.count;
 
     if (isNew || hasMore) {
+      if (!playedSound) {
+        playWhatsAppSound();
+        playedSound = true;
+      }
+
       const notifId = `wa-${chat.name.replace(/\s+/g, '-')}`;
       const timeStr = chat.time ? ` · ${chat.time}` : '';
       const previewStr = chat.preview ? `\n📝 "${chat.preview}"` : '';
