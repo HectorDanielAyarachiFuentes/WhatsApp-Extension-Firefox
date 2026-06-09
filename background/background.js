@@ -31,7 +31,7 @@ browser.browserAction.onClicked.addListener(() => {
 let unreadChats = [];
 let previousUnreadNames = [];
 
-const ICON_NORMAL = 'WhatsApp.svg';
+const ICON_NORMAL = 'icons/WhatsApp.svg';
 
 // Escuchar mensajes del content script Y del popup
 browser.runtime.onMessage.addListener((message, sender) => {

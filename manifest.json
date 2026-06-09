@@ -5,19 +5,19 @@
   "description": "Abre WhatsApp Web en la barra lateral de Firefox.",
   "sidebar_action": {
     "default_title": "WhatsApp",
-    "default_panel": "sidebar.html",
-    "default_icon": "WhatsApp.svg"
+    "default_panel": "sidebar/sidebar.html",
+    "default_icon": "icons/WhatsApp.svg"
   },
   "icons": {
-    "48": "WhatsApp.svg",
-    "96": "WhatsApp.svg"
+    "48": "icons/WhatsApp.svg",
+    "96": "icons/WhatsApp.svg"
   },
   "browser_action": {
-    "default_icon": "WhatsApp.svg",
+    "default_icon": "icons/WhatsApp.svg",
     "default_title": "Abrir WhatsApp"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background/background.js"]
   },
   "permissions": [
     "webRequest",
@@ -29,8 +29,8 @@
   "content_scripts": [
     {
       "matches": ["*://web.whatsapp.com/*"],
-      "css": ["style.css"],
-      "js": ["content.js"],
+      "css": ["content/style.css"],
+      "js": ["content/content.js"],
       "all_frames": true,
       "run_at": "document_idle"
     }
