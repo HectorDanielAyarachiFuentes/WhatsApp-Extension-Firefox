@@ -3,12 +3,20 @@ browser.webRequest.onHeadersReceived.addListener(
   function(info) {
     const headers = info.responseHeaders.filter(header => {
       const name = header.name.toLowerCase();
-      return name !== 'x-frame-options' && name !== 'frame-options' && name !== 'content-security-policy';
+      const headersToRemove = [
+        'x-frame-options', 
+        'frame-options', 
+        'content-security-policy',
+        'cross-origin-opener-policy',
+        'cross-origin-embedder-policy',
+        'cross-origin-resource-policy'
+      ];
+      return !headersToRemove.includes(name);
     });
     return { responseHeaders: headers };
   },
   {
-    urls: ["*://web.whatsapp.com/*"],
+    urls: ["<all_urls>"],
     types: ["sub_frame"]
   },
   ["blocking", "responseHeaders"]
@@ -22,11 +30,8 @@ browser.browserAction.onClicked.addListener(() => {
 // ===== 3. Sistema de notificaciones de mensajes no leídos =====
 let unreadChats = [];
 let previousUnreadNames = [];
-let pulseInterval = null;
-let isPulseOn = false;
 
-const ICON_NORMAL = 'WhatsApp.svg.webp';
-const ICON_ACTIVE = 'icon_active.svg';
+const ICON_NORMAL = 'WhatsApp.svg';
 
 // Escuchar mensajes del content script Y del popup
 browser.runtime.onMessage.addListener((message, sender) => {
@@ -57,18 +62,12 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
       // Notificaciones de escritorio para contactos NUEVOS
       notifyNewContacts(oldChats, unreadChats);
-
-      // Pulso del ícono
-      startPulse();
     } else {
       // Sin mensajes: limpiar todo
       browser.browserAction.setBadgeText({ text: '' });
       browser.browserAction.setTitle({ title: 'Abrir WhatsApp' });
       previousUnreadNames = [];
-      stopPulse();
       clearAllNotifications();
-
-
     }
   }
 });
@@ -122,23 +121,3 @@ browser.notifications.onClicked.addListener((notifId) => {
     browser.notifications.clear(notifId);
   }
 });
-
-// ===== Pulso del ícono =====
-function startPulse() {
-  if (pulseInterval) return;
-  pulseInterval = setInterval(() => {
-    isPulseOn = !isPulseOn;
-    browser.browserAction.setIcon({
-      path: isPulseOn ? ICON_ACTIVE : ICON_NORMAL
-    });
-  }, 1000);
-}
-
-function stopPulse() {
-  if (pulseInterval) {
-    clearInterval(pulseInterval);
-    pulseInterval = null;
-  }
-  isPulseOn = false;
-  browser.browserAction.setIcon({ path: ICON_NORMAL });
-}

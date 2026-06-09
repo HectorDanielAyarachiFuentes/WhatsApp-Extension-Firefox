@@ -6,14 +6,14 @@
   "sidebar_action": {
     "default_title": "WhatsApp",
     "default_panel": "sidebar.html",
-    "default_icon": "WhatsApp.svg.webp"
+    "default_icon": "WhatsApp.svg"
   },
   "icons": {
-    "48": "WhatsApp.svg.webp",
-    "96": "WhatsApp.svg.webp"
+    "48": "WhatsApp.svg",
+    "96": "WhatsApp.svg"
   },
   "browser_action": {
-    "default_icon": "WhatsApp.svg.webp",
+    "default_icon": "WhatsApp.svg",
     "default_title": "Abrir WhatsApp"
   },
   "background": {
@@ -23,7 +23,8 @@
     "webRequest",
     "webRequestBlocking",
     "notifications",
-    "*://web.whatsapp.com/*"
+    "*://web.whatsapp.com/*",
+    "<all_urls>"
   ],
   "content_scripts": [
     {
