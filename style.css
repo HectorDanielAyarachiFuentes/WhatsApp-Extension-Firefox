@@ -1,0 +1,29 @@
+/*
+  Solo eliminamos las restricciones de ancho mínimo de WhatsApp
+  y ocultamos cualquier scrollbar horizontal.
+  Dejamos que WhatsApp maneje su propio responsive.
+*/
+
+/* Quitar el min-width forzado de los contenedores principales */
+html, body, #app {
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+}
+
+/* WhatsApp usa .app-wrapper-web y .two con min-width hardcodeado */
+div[class*="app-wrapper"],
+.two,
+#app > div,
+#app > div > div {
+    min-width: 0 !important;
+}
+
+/* Ocultar scrollbar horizontal en cualquier lugar */
+::-webkit-scrollbar:horizontal {
+    display: none !important;
+    height: 0 !important;
+}
+
+* {
+    scrollbar-width: thin !important;
+}
