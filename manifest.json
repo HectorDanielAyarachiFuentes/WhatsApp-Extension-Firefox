@@ -3,6 +3,17 @@
   "name": "WhatsApp Sidebar",
   "version": "1.0",
   "description": "Abre WhatsApp Web en la barra lateral de Firefox.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wasap-extension-firefgo@ayarachi.com",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
   "sidebar_action": {
     "default_title": "WhatsApp",
     "default_panel": "sidebar/sidebar.html",
