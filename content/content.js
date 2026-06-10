@@ -33,62 +33,141 @@
   }
 
   function setupResizer() {
-    if (document.getElementById('wa-extension-resizer')) return;
-
-    const sidePanel = document.getElementById('side') || document.querySelector('[data-testid="chat-list"]');
-    if (!sidePanel) return;
-
-    // Buscar el contenedor principal de la lista de chats que define el ancho
-    // Normalmente es el padre de #side que tiene un flex-basis o ancho establecido,
-    // o simplemente tomamos el padre directo si no encontramos algo obvio.
-    let leftPane = sidePanel.closest('[style*="flex-basis"]');
-    if (!leftPane) {
-      // Intento heurístico de encontrar el contenedor izquierdo
-      let current = sidePanel;
-      for (let i = 0; i < 5; i++) {
-        if (current.parentElement && current.parentElement.classList.contains('two')) {
-          leftPane = current;
-          break;
+    // === Resizer para el panel de lista de chats ===
+    if (!document.getElementById('wa-extension-resizer')) {
+      const sidePanel = document.getElementById('side') || document.querySelector('[data-testid="chat-list"]');
+      if (sidePanel) {
+        let leftPane = sidePanel.closest('[style*="flex-basis"]');
+        if (!leftPane) {
+          let current = sidePanel;
+          for (let i = 0; i < 5; i++) {
+            if (current.parentElement && current.parentElement.classList.contains('two')) {
+              leftPane = current;
+              break;
+            }
+            current = current.parentElement;
+          }
+          if (!leftPane) leftPane = sidePanel.parentElement;
         }
-        current = current.parentElement;
+
+        if (leftPane) {
+          const resizer = document.createElement('div');
+          resizer.id = 'wa-extension-resizer';
+          
+          leftPane.style.position = 'relative';
+          leftPane.appendChild(resizer);
+          
+          let isResizing = false;
+
+          resizer.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault();
+          });
+
+          // Usamos window para el mousemove en caso de que el ratón salga del panel
+          const onMouseMove = function(e) {
+            if (!isResizing) return;
+            // Para la lista de chats, el ancho suele ser desde el resizer de nav hasta el ratón.
+            // Para simplificar, usamos event.clientX pero restando la posición izquierda si es necesario.
+            const rect = leftPane.getBoundingClientRect();
+            // calculamos el ancho asumiendo que leftPane empieza en rect.left
+            const newWidth = e.clientX - rect.left;
+            
+            if (newWidth >= 0 && newWidth <= window.innerWidth - 300) {
+              leftPane.style.flexBasis = `${newWidth}px`;
+              leftPane.style.maxWidth = `${newWidth}px`;
+              leftPane.style.width = `${newWidth}px`;
+              // Añadimos minWidth para forzar que WhatsApp no lo expanda
+              leftPane.style.minWidth = `${newWidth}px`;
+              leftPane.style.overflow = 'hidden';
+            }
+          };
+
+          const onMouseUp = function() {
+            if (isResizing) {
+              isResizing = false;
+              document.body.style.cursor = '';
+            }
+          };
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        }
       }
-      if (!leftPane) leftPane = sidePanel.parentElement;
     }
 
-    if (!leftPane) return;
+    // === Resizer para la barra de navegación izquierda (iconos) ===
+    if (!document.getElementById('wa-extension-nav-resizer')) {
+      // En WhatsApp Web moderno, hay varios headers: [nav rail, chat list, main chat]
+      // El primero en el DOM suele ser el nav rail (barra de iconos)
+      const headers = document.querySelectorAll('header');
+      if (headers.length > 0) {
+        let navHeader = headers[0];
+        
+        // Asegurarnos de que este header NO sea el del panel de chats
+        const sidePanel = document.getElementById('side') || document.querySelector('[data-testid="chat-list"]');
+        if (sidePanel && sidePanel.parentElement && sidePanel.parentElement.contains(navHeader)) {
+           navHeader = null; // No hay barra de iconos visible o no es el primer header
+        }
+        
+        if (navHeader) {
+          let navPane = navHeader.parentElement;
+          
+          // Buscar el contenedor que realmente define el ancho de esta columna
+          let current = navPane;
+          for (let i = 0; i < 4; i++) {
+             if (current && current.style && (current.style.width || current.style.flexBasis || current.style.minWidth || current.style.zIndex)) {
+                navPane = current;
+                break;
+             }
+             if (current) current = current.parentElement;
+          }
 
-    const resizer = document.createElement('div');
-    resizer.id = 'wa-extension-resizer';
-    
-    // Asegurar posicionamiento relativo en el panel para anclar el resizer
-    leftPane.style.position = 'relative';
-    leftPane.appendChild(resizer);
-    
-    let isResizing = false;
+          if (navPane) {
+            const navResizer = document.createElement('div');
+            navResizer.id = 'wa-extension-nav-resizer';
+            
+            navPane.style.position = 'relative';
+            navPane.appendChild(navResizer);
 
-    resizer.addEventListener('mousedown', function(e) {
-      isResizing = true;
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
+            let isNavResizing = false;
 
-    document.addEventListener('mousemove', function(e) {
-      if (!isResizing) return;
-      const newWidth = e.clientX;
-      // Permitir un ancho desde 150px hasta 800px (o el ancho de la ventana)
-      if (newWidth >= 150 && newWidth <= window.innerWidth - 300) {
-        leftPane.style.flexBasis = `${newWidth}px`;
-        leftPane.style.maxWidth = `${newWidth}px`;
-        leftPane.style.width = `${newWidth}px`;
+            navResizer.addEventListener('mousedown', function(e) {
+              isNavResizing = true;
+              document.body.style.cursor = 'col-resize';
+              e.preventDefault();
+              e.stopPropagation();
+            });
+
+            const onNavMouseMove = function(e) {
+              if (!isNavResizing) return;
+              
+              const rect = navPane.getBoundingClientRect();
+              const newWidth = e.clientX - rect.left;
+              
+              if (newWidth >= 0 && newWidth <= 350) {
+                navPane.style.flexBasis = `${newWidth}px`;
+                navPane.style.maxWidth = `${newWidth}px`;
+                navPane.style.width = `${newWidth}px`;
+                navPane.style.minWidth = `${newWidth}px`;
+                navPane.style.overflow = 'hidden';
+              }
+            };
+
+            const onNavMouseUp = function() {
+              if (isNavResizing) {
+                isNavResizing = false;
+                document.body.style.cursor = '';
+              }
+            };
+
+            document.addEventListener('mousemove', onNavMouseMove);
+            document.addEventListener('mouseup', onNavMouseUp);
+          }
+        }
       }
-    });
-
-    document.addEventListener('mouseup', function() {
-      if (isResizing) {
-        isResizing = false;
-        document.body.style.cursor = '';
-      }
-    });
+    }
   }
 
   function scanUnreadChats() {
