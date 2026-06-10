@@ -71,8 +71,8 @@ div[data-testid="chat-list"]::after {
 #wa-extension-nav-resizer {
     position: absolute;
     top: 0;
-    right: -2px;
-    width: 6px;
+    right: -8px; /* Centrado respecto al borde (16px / 2) */
+    width: 16px; /* Gran área invisible ("hitbox") para atrapar el ratón fácilmente */
     height: 100%;
     cursor: ew-resize;
     z-index: 9999;
@@ -81,12 +81,13 @@ div[data-testid="chat-list"]::after {
 
 /* Solo la barra de la lista de chats tendrá el efecto visual verde */
 #wa-extension-resizer {
-    transition: background-color 0.2s ease;
+    transition: background 0.2s ease;
 }
 
 #wa-extension-resizer:hover,
 #wa-extension-resizer:active {
-    background-color: #00a884; /* Color verde de WhatsApp */
+    /* Dibuja una línea verde de 6px en el centro exacto del hitbox de 16px */
+    background: linear-gradient(to right, transparent 5px, #00a884 5px, #00a884 11px, transparent 11px);
 }
 
 /* Quitar hover/active del resizer de la lista de chats para que no parpadee si no queremos */

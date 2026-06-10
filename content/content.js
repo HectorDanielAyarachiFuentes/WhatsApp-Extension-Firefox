@@ -5,7 +5,19 @@
   // Nombres que NO son contactos reales y hay que ignorar
   const BLACKLIST = ['archivados', 'archived', 'comunidades', 'communities'];
 
+  const SELECTORS = {
+    chatListContainer: '#pane-side, #side, [data-testid="chat-list"], [aria-label="Lista de chats"]',
+    chatRow: '[data-testid="cell-frame-container"], [data-testid="list-item-chat"], [role="row"], [role="listitem"], [role="option"]',
+    chatTitle: '[data-testid="cell-frame-title"] span, span[title]',
+    unreadBadge: '[aria-label*="no leíd"], [aria-label*="unread"], [aria-label*="sin leer"], [data-testid="icon-unread-count"]',
+    secondaryContent: '[data-testid="cell-frame-secondary"]',
+    primaryDetail: '[data-testid="cell-frame-primary-detail"]',
+    communitiesBtn: '[aria-label="Comunidades"], [title="Comunidades"], [aria-label="Communities"], [title="Communities"]',
+    headerIcons: 'header span[data-icon]'
+  };
+
   let isChatListCollapsed = false;
+  let previousActiveChatsNames = '';
 
   // Esperar a que WhatsApp cargue completamente
   let initAttempts = 0;
@@ -27,25 +39,42 @@
   function init() {
     const isBackground = (window.name === 'wa-background-iframe');
 
+    // Observer para escanear chats no leídos solo cuando hay cambios en el DOM (Rendimiento)
+    const observer = new MutationObserver(() => scanUnreadChats());
+    let observerContainer = null;
+
+    const tryObserve = () => {
+      // Buscar todos los posibles contenedores de la lista de chats
+      const containers = document.querySelectorAll(SELECTORS.chatListContainer);
+      if (containers.length > 0) {
+        const container = containers[containers.length - 1]; // Tomar el último suele ser el más específico o visible
+        if (container !== observerContainer) {
+          if (observerContainer) observer.disconnect();
+          observer.observe(container, { childList: true, subtree: true, characterData: true });
+          observerContainer = container;
+        }
+      }
+    };
+
+    tryObserve();
+    // Intentar reconectar periódicamente por si React desmonta y recrea el contenedor
+    setInterval(tryObserve, 2000);
+    
+    // Escaneo inicial
+    setTimeout(scanUnreadChats, 200);
+
     if (isBackground) {
       console.log('[WA Sidebar] Ejecutando en segundo plano (modo notificaciones).');
-      setInterval(() => {
-        scanUnreadChats();
-      }, 1000);
-      setTimeout(scanUnreadChats, 200);
       return;
     }
 
     console.log('[WA Sidebar] Ejecutando en la barra lateral interactiva.');
-    // Escanear cada 500ms para que sea "instantáneo"
+    // Mantenemos setInterval solo para la UI de sidebar interactivo
     setInterval(() => {
-      scanUnreadChats();
-      setupResizer(); // Asegurar que el resizer exista siempre
-      checkCollapseState(); // Comprobar si la lista está colapsada midiendo su ancho
-      renderMiniChats(); // Renderizar caritas si está colapsado
+      setupResizer(); 
+      checkCollapseState(); 
+      renderMiniChats(); 
     }, 500);
-    // Escaneo inicial rápido
-    setTimeout(scanUnreadChats, 200);
   }
 
   function setupResizer() {
@@ -130,7 +159,7 @@
                  
                  if (resizer) {
                      resizer.style.left = 'auto';
-                     resizer.style.right = '-5px';
+                     resizer.style.right = '-8px'; // Centrado en el borde con hitbox de 16px
                  }
               }
               leftPane.style.overflow = 'hidden';
@@ -241,9 +270,12 @@
   }
 
   function getChatRows() {
-      let rows = Array.from(document.querySelectorAll('#pane-side [role="listitem"], #pane-side [role="row"], #side [role="listitem"], #side [role="row"], [aria-label="Lista de chats"] [role="listitem"]'));
+      // Intentamos buscar por contenedores + rol primero
+      const selectors = SELECTORS.chatListContainer.split(',').map(sel => `${sel.trim()} [role="listitem"], ${sel.trim()} [role="row"]`).join(', ');
+      let rows = Array.from(document.querySelectorAll(selectors));
+      
       if (rows.length === 0) {
-          rows = Array.from(document.querySelectorAll('[data-testid="cell-frame-container"], [data-testid="list-item-chat"]'));
+          rows = Array.from(document.querySelectorAll(SELECTORS.chatRow));
       }
       return rows;
   }
@@ -304,17 +336,25 @@
 
     if (activeChats.length === 0) return;
 
+    // Evitar la reconstrucción agresiva del DOM si la lista de contactos no ha cambiado
+    const currentChatNames = activeChats.map(c => c.name).join('|');
+    if (previousActiveChatsNames === currentChatNames && miniChatsContainer && miniChatsContainer.innerHTML !== '') {
+        miniChatsContainer.style.display = 'flex'; // <--- FIX: Volver a mostrarlo si estaba oculto
+        return; 
+    }
+    previousActiveChatsNames = currentChatNames;
+
     // Buscar el botón de Comunidades o el último ícono para saber dónde posicionarnos
     let topPosition = 250;
     let leftPosition = 12;
 
-    const communitiesBtn = document.querySelector('[aria-label="Comunidades"], [title="Comunidades"], [aria-label="Communities"], [title="Communities"]');
+    const communitiesBtn = document.querySelector(SELECTORS.communitiesBtn);
     if (communitiesBtn) {
         const rect = communitiesBtn.getBoundingClientRect();
         topPosition = rect.bottom + 20;
         leftPosition = rect.left + (rect.width / 2) - 27; // Centrado para un contenedor de 54px
     } else {
-        const icons = document.querySelectorAll('header span[data-icon]');
+        const icons = document.querySelectorAll(SELECTORS.headerIcons);
         if (icons.length > 0) {
             const rect = icons[icons.length - 1].getBoundingClientRect();
             topPosition = rect.bottom + 20;
@@ -405,17 +445,8 @@
     const unreadChats = [];
 
     try {
-      // Buscar TODOS los elementos con badge de no leído
-      // WhatsApp usa badges con aria-label que contiene "no leído" / "unread"
-      const badges = document.querySelectorAll(
-        '[aria-label*="no leíd"], [aria-label*="unread"], [aria-label*="sin leer"]'
-      );
-
-      // También buscar por data-testid
-      const badges2 = document.querySelectorAll('[data-testid="icon-unread-count"]');
-
-      // Combinar ambas búsquedas sin duplicados
-      const allBadges = new Set([...badges, ...badges2]);
+      // Buscar TODOS los elementos con badge de no leído centralizado
+      const allBadges = document.querySelectorAll(SELECTORS.unreadBadge);
 
       allBadges.forEach(badge => {
         const count = parseInt(badge.textContent.trim()) || 1;
@@ -460,12 +491,8 @@
       current = current.parentElement;
       if (!current) return null;
 
-      // Selectores conocidos de filas de chat en WhatsApp Web
-      if (current.getAttribute('data-testid') === 'cell-frame-container') return current;
-      if (current.getAttribute('data-testid') === 'list-item-chat') return current;
-      if (current.getAttribute('role') === 'row') return current;
-      if (current.getAttribute('role') === 'listitem') return current;
-      if (current.getAttribute('role') === 'option') return current;
+      // Selectores conocidos de filas de chat en WhatsApp Web usando la config centralizada
+      if (current.matches && current.matches(SELECTORS.chatRow)) return current;
       
       // WhatsApp a veces usa divs con clase que contiene "chat" 
       // y tienen un onclick o son clickeables
