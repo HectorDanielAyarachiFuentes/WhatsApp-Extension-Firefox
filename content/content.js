@@ -126,7 +126,8 @@
             let newWidth = e.clientX - navWidth;
             if (newWidth < 0) newWidth = 0;
             
-            if (newWidth >= 0 && newWidth <= window.innerWidth - 300) {
+            // Permitir arrastrar casi hasta el borde derecho (dejando 20px para no perderla)
+            if (newWidth >= 0 && newWidth <= window.innerWidth - 20) {
               const resizer = document.getElementById('wa-extension-resizer');
               if (newWidth < 80) {
                  // Modo colapsado: lo mantenemos en pantalla (para que IntersectionObserver de React no lo desmonte)
