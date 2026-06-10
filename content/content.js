@@ -97,13 +97,12 @@
                  
                  leftPane.style.marginLeft = `0px`;
                  leftPane.style.marginRight = `-300px`; // El chat principal ignorará su ancho
-                 leftPane.style.opacity = `0.01`;
-                 leftPane.style.pointerEvents = 'none'; // Que no interfiera con los clics del chat principal
+                 leftPane.style.visibility = '';
+                 leftPane.classList.add('wa-is-collapsed'); // Delega opacidad y clics al CSS
                  
                  if (resizer) {
                      resizer.style.left = '0px';
                      resizer.style.right = 'auto';
-                     resizer.style.pointerEvents = 'auto'; // Permitir agarrar el resizer
                  }
               } else {
                  // Modo normal
@@ -114,13 +113,12 @@
                  
                  leftPane.style.marginLeft = `0px`;
                  leftPane.style.marginRight = `0px`;
-                 leftPane.style.opacity = `1`;
-                 leftPane.style.pointerEvents = 'auto';
+                 leftPane.style.visibility = '';
+                 leftPane.classList.remove('wa-is-collapsed');
                  
                  if (resizer) {
                      resizer.style.left = 'auto';
                      resizer.style.right = '-5px';
-                     resizer.style.pointerEvents = 'auto';
                  }
               }
               leftPane.style.overflow = 'hidden';

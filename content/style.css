@@ -138,3 +138,17 @@ div[data-testid="chat-list"]::after {
     border-radius: 50%;
     object-fit: cover;
 }
+
+/* Modo colapsado: Hace que todo el panel sea invisible y no clickeable, excepto el resizer */
+.wa-is-collapsed {
+    opacity: 0.001 !important;
+    pointer-events: none !important;
+}
+
+.wa-is-collapsed * {
+    pointer-events: none !important;
+}
+
+#wa-extension-resizer {
+    pointer-events: auto !important;
+}
