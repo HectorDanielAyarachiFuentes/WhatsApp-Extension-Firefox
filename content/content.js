@@ -236,6 +236,19 @@
       return rows;
   }
 
+  function getNavHeader() {
+    const headers = document.querySelectorAll('header');
+    if (headers.length > 0) {
+      let navHeader = headers[0];
+      const sidePanel = document.getElementById('side') || document.querySelector('[data-testid="chat-list"]');
+      if (sidePanel && sidePanel.parentElement && sidePanel.parentElement.contains(navHeader)) {
+         navHeader = null; // No hay barra de iconos visible o no es el primer header
+      }
+      return navHeader;
+    }
+    return null;
+  }
+
   function renderMiniChats() {
     let miniChatsContainer = document.getElementById('wa-extension-mini-chats');
     
@@ -297,21 +310,39 @@
         }
     }
 
+    const navHeader = getNavHeader();
+    const parentContainer = navHeader || document.body;
+
     if (!miniChatsContainer) {
       miniChatsContainer = document.createElement('div');
       miniChatsContainer.id = 'wa-extension-mini-chats';
-      document.body.appendChild(miniChatsContainer);
+      parentContainer.appendChild(miniChatsContainer);
+    } else if (miniChatsContainer.parentElement !== parentContainer) {
+      parentContainer.appendChild(miniChatsContainer);
     }
     
     // Aplicar estilos flotantes
+    const isFloatingInBody = (parentContainer === document.body);
     miniChatsContainer.style.display = 'flex';
-    miniChatsContainer.style.position = 'fixed';
-    miniChatsContainer.style.top = `${topPosition}px`;
-    miniChatsContainer.style.left = `${leftPosition}px`;
+    miniChatsContainer.style.position = isFloatingInBody ? 'fixed' : 'absolute';
     miniChatsContainer.style.width = `54px`; // Dar más espacio para evitar cortes en el borde derecho
-    miniChatsContainer.style.zIndex = '99999';
     miniChatsContainer.style.flexDirection = 'column';
     miniChatsContainer.style.gap = '12px';
+
+    if (isFloatingInBody) {
+        miniChatsContainer.style.top = `${topPosition}px`;
+        miniChatsContainer.style.left = `${leftPosition}px`;
+        miniChatsContainer.style.right = 'auto';
+        miniChatsContainer.style.margin = '0';
+        miniChatsContainer.style.zIndex = '101';
+    } else {
+        navHeader.style.position = 'relative';
+        miniChatsContainer.style.top = `${topPosition}px`;
+        miniChatsContainer.style.left = '0';
+        miniChatsContainer.style.right = '0';
+        miniChatsContainer.style.margin = '0 auto';
+        miniChatsContainer.style.zIndex = '5'; // Un z-index bajo interno es suficiente
+    }
     
     miniChatsContainer.innerHTML = ''; // Reconstruir para estar actualizados
 
