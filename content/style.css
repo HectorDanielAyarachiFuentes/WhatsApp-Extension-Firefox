@@ -4,18 +4,23 @@
   Dejamos que WhatsApp maneje su propio responsive.
 */
 
-/* Quitar el min-width forzado de los contenedores principales */
+/* Quitar el min-width y min-height forzado de los contenedores principales */
 html, body, #app {
     min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
     overflow-x: hidden !important;
+    overflow-y: hidden !important;
 }
 
-/* WhatsApp usa .app-wrapper-web y .two con min-width hardcodeado */
+/* WhatsApp usa .app-wrapper-web y .two con min-width y min-height hardcodeados */
 div[class*="app-wrapper"],
 .two,
 #app > div,
 #app > div > div {
     min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
 }
 
 /* Quitar la línea divisoria blanca vertical de WhatsApp (incluyendo propiedades lógicas modernas) */
