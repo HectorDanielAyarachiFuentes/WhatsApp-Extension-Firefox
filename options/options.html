@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -27,6 +27,22 @@
             <input type="checkbox" id="muteSoundToggle">
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <h3>Tono de Notificación</h3>
+            <p>Elige el sonido que se reproducirá.</p>
+          </div>
+          <div class="setting-controls" style="display: flex; gap: 10px; align-items: center;">
+            <select id="ringtoneSelect" class="form-select">
+              <option value="black_mirror">Black Mirror Text</option>
+              <option value="bubble">Burbuja Original</option>
+              <option value="bell">Campanita Blanca</option>
+              <option value="ding">Ding Metálico</option>
+            </select>
+            <button id="testRingtoneBtn" class="primary-btn" style="padding: 6px 12px; font-size: 13px;">▶ Probar</button>
+          </div>
         </div>
 
         <div class="setting-item">

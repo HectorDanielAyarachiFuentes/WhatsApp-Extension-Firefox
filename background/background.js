@@ -32,11 +32,13 @@ let unreadChats = [];
 let previousUnreadNames = [];
 let isSoundMuted = false;
 let isNotifMuted = false;
+let currentRingtone = 'black_mirror';
 
 // Cargar preferencias iniciales
-browser.storage.local.get(['isSoundMuted', 'isNotifMuted']).then((res) => {
+browser.storage.local.get(['isSoundMuted', 'isNotifMuted', 'ringtone']).then((res) => {
   isSoundMuted = res.isSoundMuted || false;
   isNotifMuted = res.isNotifMuted || false;
+  currentRingtone = res.ringtone || 'black_mirror';
 });
 
 // Escuchar cambios en la configuración
@@ -44,6 +46,7 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     if (changes.isSoundMuted !== undefined) isSoundMuted = changes.isSoundMuted.newValue;
     if (changes.isNotifMuted !== undefined) isNotifMuted = changes.isNotifMuted.newValue;
+    if (changes.ringtone !== undefined) currentRingtone = changes.ringtone.newValue;
   }
 });
 
@@ -54,6 +57,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // El popup pide los datos de chats no leídos
   if (message.type === 'get_unread') {
     sendResponse({ chats: unreadChats });
+  } else if (message.type === 'test_ringtone') {
+    playWhatsAppSound(message.ringtone);
+    sendResponse({ success: true });
   } else if (message.type === 'quick_reply') {
     // Reenviar el mensaje de respuesta rápida al content.js en la pestaña
     browser.tabs.query({ url: "*://web.whatsapp.com/*" }).then(tabs => {
@@ -76,12 +82,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'unread_update') {
     const oldChats = unreadChats;
     unreadChats = message.chats;
+    
+    // Actualizar badge
     const totalContacts = unreadChats.length;
-
+    
     if (totalContacts > 0) {
-      // Badge verde con el número de contactos
+      browser.browserAction.setBadgeText({ text: totalContacts.toString() });
       browser.browserAction.setBadgeBackgroundColor({ color: '#25D366' });
-      browser.browserAction.setBadgeText({ text: String(totalContacts) });
 
       // Tooltip detallado con vista previa premium
       let tooltipText = `🟢 WHATSAPP WEB\n━━━━━━━━━━━━━━━━━━━━━━\nTienes ${totalContacts} chat${totalContacts > 1 ? 's' : ''} sin leer\n\n`;
@@ -100,23 +107,28 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       tooltipText += `━━━━━━━━━━━━━━━━━━━━━━\n👆 Haz clic para abrir el panel`;
       
       browser.browserAction.setTitle({ title: tooltipText });
-
-
-      // Notificaciones de escritorio para contactos NUEVOS
       notifyNewContacts(oldChats, unreadChats);
     } else {
       // Sin mensajes: limpiar todo
       browser.browserAction.setBadgeText({ text: '' });
       browser.browserAction.setTitle({ title: 'Abrir WhatsApp' });
       previousUnreadNames = [];
-      clearAllNotifications();
     }
   }
 });
 
 // ===== Sonido de notificación =====
-function playWhatsAppSound() {
+function playWhatsAppSound(forceTone = null) {
   try {
+    const toneToPlay = forceTone || currentRingtone;
+
+    if (toneToPlay === 'black_mirror') {
+      const audio = new Audio(browser.runtime.getURL('black_mirror_text.wav'));
+      audio.volume = 0.8;
+      audio.play().catch(e => console.error("Error al reproducir audio local:", e));
+      return;
+    }
+
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -124,16 +136,35 @@ function playWhatsAppSound() {
     osc.connect(gain);
     gain.connect(ctx.destination);
     
-    // Tono "pop" estilo WhatsApp corto y agudo
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0.5, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-    
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.1);
+    if (toneToPlay === 'bubble') {
+      // Tono "pop" estilo WhatsApp corto y agudo (Burbuja Original)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+
+    } else if (toneToPlay === 'bell') {
+      // Tono "Campanita Blanca" suave
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+
+    } else if (toneToPlay === 'ding') {
+      // Tono "Ding Metálico"
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1000, ctx.currentTime);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    }
+
   } catch(e) {
     console.error("Audio no soportado:", e);
   }
