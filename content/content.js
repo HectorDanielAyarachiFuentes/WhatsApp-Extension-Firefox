@@ -243,13 +243,13 @@
     if (communitiesBtn) {
         const rect = communitiesBtn.getBoundingClientRect();
         topPosition = rect.bottom + 20;
-        leftPosition = rect.left + (rect.width / 2) - 20;
+        leftPosition = rect.left + (rect.width / 2) - 27; // Centrado para un contenedor de 54px
     } else {
         const icons = document.querySelectorAll('header span[data-icon]');
         if (icons.length > 0) {
             const rect = icons[icons.length - 1].getBoundingClientRect();
             topPosition = rect.bottom + 20;
-            leftPosition = rect.left + (rect.width / 2) - 20;
+            leftPosition = rect.left + (rect.width / 2) - 27;
         }
     }
 
@@ -264,7 +264,7 @@
     miniChatsContainer.style.position = 'fixed';
     miniChatsContainer.style.top = `${topPosition}px`;
     miniChatsContainer.style.left = `${leftPosition}px`;
-    miniChatsContainer.style.width = `40px`;
+    miniChatsContainer.style.width = `54px`; // Dar más espacio para evitar cortes en el borde derecho
     miniChatsContainer.style.zIndex = '99999';
     miniChatsContainer.style.flexDirection = 'column';
     miniChatsContainer.style.gap = '12px';

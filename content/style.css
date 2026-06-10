@@ -96,9 +96,22 @@ div[data-testid="chat-list"]::after {
 #wa-extension-mini-chats {
     flex-direction: column;
     align-items: center;
-    margin-top: 10px;
     gap: 12px;
-    width: 100%;
+    bottom: 90px; /* Evita pisar los íconos de abajo (Ajustes, Perfil) */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 10px;
+    /* Ocultar barra de scroll en Firefox e IE */
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+/* Ocultar barra de scroll en Chrome/Safari de forma agresiva */
+#wa-extension-mini-chats::-webkit-scrollbar {
+    width: 0px !important;
+    height: 0px !important;
+    display: none !important;
+    background: transparent !important;
 }
 
 .wa-mini-chat-item {
@@ -111,6 +124,7 @@ div[data-testid="chat-list"]::after {
     align-items: center;
     transition: transform 0.2s ease, opacity 0.2s ease;
     opacity: 0.8;
+    flex-shrink: 0; /* Evitar que se aplasten cuando hay muchos */
 }
 
 .wa-mini-chat-item:hover {
