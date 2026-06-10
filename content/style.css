@@ -152,3 +152,18 @@ div[data-testid="chat-list"]::after {
 #wa-extension-resizer {
     pointer-events: auto !important;
 }
+
+/* Corrección para que el panel de emojis/stickers/GIFs se alinee correctamente cuando el chat list está colapsado */
+body:has(.wa-is-collapsed) #main div[style*="left: -"],
+body:has(.wa-is-collapsed) [role="main"] div[style*="left: -"],
+body:has(.wa-is-collapsed) div:has(input[placeholder*="sticker" i]),
+body:has(.wa-is-collapsed) div:has(input[placeholder*="buscar" i]),
+body:has(.wa-is-collapsed) div:has(input[placeholder*="search" i]),
+body:has(.wa-is-collapsed) div:has(button[aria-label*="emoji" i]),
+body:has(.wa-is-collapsed) div:has(button[aria-label*="sticker" i]),
+body:has(.wa-is-collapsed) div[role="region"],
+body:has(.wa-is-collapsed) ._ak7s {
+    left: 0 !important;
+}
+
+
