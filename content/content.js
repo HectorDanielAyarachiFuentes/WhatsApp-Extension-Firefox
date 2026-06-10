@@ -72,18 +72,57 @@
           // Usamos window para el mousemove en caso de que el ratón salga del panel
           const onMouseMove = function(e) {
             if (!isResizing) return;
-            // Para la lista de chats, el ancho suele ser desde el resizer de nav hasta el ratón.
-            // Para simplificar, usamos event.clientX pero restando la posición izquierda si es necesario.
-            const rect = leftPane.getBoundingClientRect();
-            // calculamos el ancho asumiendo que leftPane empieza en rect.left
-            const newWidth = e.clientX - rect.left;
             
-            if (newWidth >= 0 && newWidth <= window.innerWidth) {
-              leftPane.style.flexBasis = `${newWidth}px`;
-              leftPane.style.maxWidth = `${newWidth}px`;
-              leftPane.style.width = `${newWidth}px`;
-              // Añadimos minWidth para forzar que WhatsApp no lo expanda
-              leftPane.style.minWidth = `${newWidth}px`;
+            let navWidth = 64; // Ancho típico de la barra lateral
+            const headers = document.querySelectorAll('header');
+            if (headers.length > 0) {
+                const navRect = headers[0].getBoundingClientRect();
+                if (navRect.left === 0 && navRect.width < 100) {
+                    navWidth = navRect.width;
+                }
+            }
+            
+            let newWidth = e.clientX - navWidth;
+            if (newWidth < 0) newWidth = 0;
+            
+            if (newWidth >= 0 && newWidth <= window.innerWidth - 300) {
+              const resizer = document.getElementById('wa-extension-resizer');
+              if (newWidth < 80) {
+                 // Modo colapsado: lo mantenemos en pantalla (para que IntersectionObserver de React no lo desmonte)
+                 // pero usamos margin-right negativo para que el chat principal se dibuje encima de él.
+                 leftPane.style.flexBasis = `300px`;
+                 leftPane.style.maxWidth = `300px`;
+                 leftPane.style.width = `300px`;
+                 leftPane.style.minWidth = `300px`;
+                 
+                 leftPane.style.marginLeft = `0px`;
+                 leftPane.style.marginRight = `-300px`; // El chat principal ignorará su ancho
+                 leftPane.style.opacity = `0.01`;
+                 leftPane.style.pointerEvents = 'none'; // Que no interfiera con los clics del chat principal
+                 
+                 if (resizer) {
+                     resizer.style.left = '0px';
+                     resizer.style.right = 'auto';
+                     resizer.style.pointerEvents = 'auto'; // Permitir agarrar el resizer
+                 }
+              } else {
+                 // Modo normal
+                 leftPane.style.flexBasis = `${newWidth}px`;
+                 leftPane.style.maxWidth = `${newWidth}px`;
+                 leftPane.style.width = `${newWidth}px`;
+                 leftPane.style.minWidth = `${newWidth}px`;
+                 
+                 leftPane.style.marginLeft = `0px`;
+                 leftPane.style.marginRight = `0px`;
+                 leftPane.style.opacity = `1`;
+                 leftPane.style.pointerEvents = 'auto';
+                 
+                 if (resizer) {
+                     resizer.style.left = 'auto';
+                     resizer.style.right = '-5px';
+                     resizer.style.pointerEvents = 'auto';
+                 }
+              }
               leftPane.style.overflow = 'hidden';
             }
           };
@@ -179,8 +218,15 @@
   function checkCollapseState() {
       const resizer = document.getElementById('wa-extension-resizer');
       if (resizer && resizer.parentElement) {
-          const width = resizer.parentElement.getBoundingClientRect().width;
-          isChatListCollapsed = (width > 0 && width < 90);
+          const leftPane = resizer.parentElement;
+          const marginRight = parseInt(getComputedStyle(leftPane).marginRight) || 0;
+          // Si tiene margin-right negativo profundo, está oculto detrás del main chat
+          if (marginRight < -100) {
+              isChatListCollapsed = true;
+          } else {
+              const width = leftPane.getBoundingClientRect().width;
+              isChatListCollapsed = (width > 0 && width < 90);
+          }
       }
   }
 
@@ -285,60 +331,28 @@
       miniContainer.onclick = (e) => {
         e.stopPropagation();
         
-        // WhatsApp desmonta los chats cuando la lista mide 0px.
-        // Para hacer clic, tenemos que "engañar" a WhatsApp expandiendo la lista 
-        // de forma invisible por una fracción de segundo para que React la vuelva a cargar.
-        const resizer = document.getElementById('wa-extension-resizer');
-        let leftPane = null;
-        if (resizer) leftPane = resizer.parentElement;
-
-        if (leftPane) {
-            // Guardar estilos originales
-            const oldWidth = leftPane.style.width;
-            
-            // Expandir de forma invisible usando margin negativo para que no mueva el flexbox
-            leftPane.style.opacity = '0.01'; // Casi invisible
-            leftPane.style.marginLeft = '-300px'; // Compensa los 300px de ancho
-            
-            leftPane.style.flexBasis = '300px';
-            leftPane.style.width = '300px';
-            leftPane.style.minWidth = '300px';
-
-            // Esperar 300ms a que React reaccione y renderice el DOM
-            setTimeout(() => {
-                let clicked = false;
-                
-                // Buscar dentro del contenedor de chats específicamente
-                const span = document.querySelector(`#pane-side span[title="${chat.name}"], #side span[title="${chat.name}"], [aria-label="Lista de chats"] span[title="${chat.name}"]`);
-                
-                if (span) {
-                    let current = span;
-                    for (let i=0; i<6; i++) {
-                        if (current && (current.getAttribute('role')==='button' || current.getAttribute('role')==='row' || current.getAttribute('role')==='listitem' || current.getAttribute('tabindex')==='-1')) {
-                            // WhatsApp usa mousedown para la mayoría de sus interacciones de lista
-                            current.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
-                            current.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
-                            current.click();
-                            clicked = true;
-                            break;
-                        }
-                        current = current.parentElement;
-                    }
-                    if (!clicked) {
-                        span.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
-                        span.click();
-                    }
+        // Ahora el panel NUNCA sale de la pantalla (gracias al margin-right negativo), 
+        // así que el elemento SIEMPRE es visible para React y no pierde su estado de scroll.
+        const span = document.querySelector(`#pane-side span[title="${chat.name}"], #side span[title="${chat.name}"], [aria-label="Lista de chats"] span[title="${chat.name}"]`);
+        
+        if (span) {
+            let current = span;
+            let handled = false;
+            for (let i=0; i<6; i++) {
+                if (current && (current.getAttribute('role')==='button' || current.getAttribute('role')==='row' || current.getAttribute('role')==='listitem' || current.getAttribute('tabindex')==='-1')) {
+                    // Clic instantáneo simulando mousedown
+                    current.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                    current.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                    current.click();
+                    handled = true;
+                    break;
                 }
-
-                // Restaurar el estado colapsado
-                leftPane.style.position = 'relative'; 
-                leftPane.style.opacity = '1';
-                leftPane.style.marginLeft = '0px';
-                
-                leftPane.style.flexBasis = '0px';
-                leftPane.style.width = '0px';
-                leftPane.style.minWidth = '0px';
-            }, 300);
+                current = current.parentElement;
+            }
+            if (!handled) {
+                span.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                span.click();
+            }
         }
       };
 
