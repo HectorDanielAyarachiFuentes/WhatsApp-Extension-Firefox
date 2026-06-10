@@ -123,7 +123,7 @@ function playWhatsAppSound(forceTone = null) {
     const toneToPlay = forceTone || currentRingtone;
 
     if (toneToPlay === 'black_mirror') {
-      const audio = new Audio(browser.runtime.getURL('black_mirror_text.wav'));
+      const audio = new Audio(browser.runtime.getURL('sounds/black_mirror_text.wav'));
       audio.volume = 0.8;
       audio.play().catch(e => console.error("Error al reproducir audio local:", e));
       return;
