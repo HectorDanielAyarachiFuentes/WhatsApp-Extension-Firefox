@@ -83,3 +83,44 @@ div[data-testid="chat-list"]::after {
 #wa-extension-resizer:active {
     background-color: #00a884; /* Color verde de WhatsApp */
 }
+
+/* Quitar hover/active del resizer de la lista de chats para que no parpadee si no queremos */
+/* Pero el usuario dijo que la línea verde le gusta, así que no lo quitamos de #wa-extension-resizer */
+/* Si queremos solo en el nav-resizer: */
+#wa-extension-nav-resizer:hover,
+#wa-extension-nav-resizer:active {
+    background-color: transparent !important;
+}
+
+/* === Estilos para los chats miniatura en la barra de navegación === */
+#wa-extension-mini-chats {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+    gap: 12px;
+    width: 100%;
+}
+
+.wa-mini-chat-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.8;
+}
+
+.wa-mini-chat-item:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+.wa-mini-chat-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}

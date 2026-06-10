@@ -5,6 +5,8 @@
   // Nombres que NO son contactos reales y hay que ignorar
   const BLACKLIST = ['archivados', 'archived', 'comunidades', 'communities'];
 
+  let isChatListCollapsed = false;
+
   // Esperar a que WhatsApp cargue completamente
   let initAttempts = 0;
   const waitForApp = setInterval(() => {
@@ -27,6 +29,8 @@
     setInterval(() => {
       scanUnreadChats();
       setupResizer(); // Asegurar que el resizer exista siempre
+      checkCollapseState(); // Comprobar si la lista está colapsada midiendo su ancho
+      renderMiniChats(); // Renderizar caritas si está colapsado
     }, 500);
     // Escaneo inicial rápido
     setTimeout(scanUnreadChats, 200);
@@ -74,7 +78,7 @@
             // calculamos el ancho asumiendo que leftPane empieza en rect.left
             const newWidth = e.clientX - rect.left;
             
-            if (newWidth >= 0 && newWidth <= window.innerWidth - 300) {
+            if (newWidth >= 0 && newWidth <= window.innerWidth) {
               leftPane.style.flexBasis = `${newWidth}px`;
               leftPane.style.maxWidth = `${newWidth}px`;
               leftPane.style.width = `${newWidth}px`;
@@ -168,6 +172,140 @@
         }
       }
     }
+  }
+
+  let cachedMiniChats = [];
+
+  function checkCollapseState() {
+      const resizer = document.getElementById('wa-extension-resizer');
+      if (resizer && resizer.parentElement) {
+          const width = resizer.parentElement.getBoundingClientRect().width;
+          isChatListCollapsed = (width > 0 && width < 90);
+      }
+  }
+
+  function getChatRows() {
+      let rows = Array.from(document.querySelectorAll('#pane-side [role="listitem"], #pane-side [role="row"], #side [role="listitem"], #side [role="row"], [aria-label="Lista de chats"] [role="listitem"]'));
+      if (rows.length === 0) {
+          rows = Array.from(document.querySelectorAll('[data-testid="cell-frame-container"], [data-testid="list-item-chat"]'));
+      }
+      return rows;
+  }
+
+  function renderMiniChats() {
+    let miniChatsContainer = document.getElementById('wa-extension-mini-chats');
+    
+    if (!isChatListCollapsed) {
+      if (miniChatsContainer) miniChatsContainer.style.display = 'none';
+      
+      // Actualizar caché de contactos por si WhatsApp los desmonta al colapsar
+      const currentRows = getChatRows();
+      if (currentRows.length > 0) {
+          cachedMiniChats = [];
+          currentRows.forEach(row => {
+              const img = row.querySelector('img');
+              const name = extractContactName(row) || '';
+              if (BLACKLIST.includes(name.toLowerCase().trim())) return;
+              if (img && img.src) {
+                  cachedMiniChats.push({
+                      name: name,
+                      src: img.src
+                  });
+              }
+          });
+      }
+      return;
+    }
+
+    // Modo colapsado: usar actuales o caché
+    let activeChats = [];
+    const chatRows = getChatRows();
+    if (chatRows.length > 0) {
+        chatRows.forEach(row => {
+            const img = row.querySelector('img');
+            const name = extractContactName(row) || 'Contacto';
+            if (BLACKLIST.includes(name.toLowerCase().trim())) return;
+            if (img && img.src) {
+                activeChats.push({ name: name, src: img.src, rowElement: row });
+            }
+        });
+    } else {
+        activeChats = cachedMiniChats;
+    }
+
+    if (activeChats.length === 0) return;
+
+    // Buscar el botón de Comunidades o el último ícono para saber dónde posicionarnos
+    let topPosition = 250;
+    let leftPosition = 12;
+
+    const communitiesBtn = document.querySelector('[aria-label="Comunidades"], [title="Comunidades"], [aria-label="Communities"], [title="Communities"]');
+    if (communitiesBtn) {
+        const rect = communitiesBtn.getBoundingClientRect();
+        topPosition = rect.bottom + 20;
+        leftPosition = rect.left + (rect.width / 2) - 20;
+    } else {
+        const icons = document.querySelectorAll('header span[data-icon]');
+        if (icons.length > 0) {
+            const rect = icons[icons.length - 1].getBoundingClientRect();
+            topPosition = rect.bottom + 20;
+            leftPosition = rect.left + (rect.width / 2) - 20;
+        }
+    }
+
+    if (!miniChatsContainer) {
+      miniChatsContainer = document.createElement('div');
+      miniChatsContainer.id = 'wa-extension-mini-chats';
+      document.body.appendChild(miniChatsContainer);
+    }
+    
+    // Aplicar estilos flotantes
+    miniChatsContainer.style.display = 'flex';
+    miniChatsContainer.style.position = 'fixed';
+    miniChatsContainer.style.top = `${topPosition}px`;
+    miniChatsContainer.style.left = `${leftPosition}px`;
+    miniChatsContainer.style.width = `40px`;
+    miniChatsContainer.style.zIndex = '99999';
+    miniChatsContainer.style.flexDirection = 'column';
+    miniChatsContainer.style.gap = '12px';
+    
+    miniChatsContainer.innerHTML = ''; // Reconstruir para estar actualizados
+
+    activeChats.forEach(chat => {
+      const miniContainer = document.createElement('div');
+      miniContainer.className = 'wa-mini-chat-item';
+      miniContainer.title = chat.name;
+      
+      const clone = document.createElement('img');
+      clone.src = chat.src;
+      clone.className = 'wa-mini-chat-img';
+      
+      miniContainer.appendChild(clone);
+      
+      miniContainer.onclick = (e) => {
+        e.stopPropagation();
+        if (chat.rowElement && document.body.contains(chat.rowElement)) {
+            const clickable = chat.rowElement.querySelector('div[role="button"]') || chat.rowElement.querySelector('div[tabindex="-1"]') || chat.rowElement;
+            if (clickable && typeof clickable.click === 'function') clickable.click();
+        } else {
+            // Intentar encontrarlo en el DOM si reapareció
+            const span = document.querySelector(`span[title="${chat.name}"]`);
+            if (span) {
+                let current = span;
+                for (let i=0; i<5; i++) {
+                    if (current && (current.getAttribute('role')==='button' || current.getAttribute('tabindex')==='-1')) {
+                        current.click();
+                        return;
+                    }
+                    current = current.parentElement;
+                }
+                span.click();
+            }
+        }
+      };
+
+      miniChatsContainer.appendChild(miniContainer);
+    });
   }
 
   function scanUnreadChats() {
