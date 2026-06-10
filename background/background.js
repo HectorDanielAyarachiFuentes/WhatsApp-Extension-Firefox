@@ -197,3 +197,65 @@ browser.menus.onClicked.addListener((info, tab) => {
     browser.runtime.openOptionsPage();
   }
 });
+
+// ===== 5. Gestión de WhatsApp en segundo plano (Iframe oculto) =====
+let sidebarPort = null;
+let backgroundIframe = null;
+
+function createBackgroundIframe() {
+  if (backgroundIframe) return; // Ya existe
+  
+  console.log('[WA Background] Creando iframe de fondo para WhatsApp Web...');
+  backgroundIframe = document.createElement('iframe');
+  backgroundIframe.id = 'wa-background-iframe';
+  backgroundIframe.name = 'wa-background-iframe'; // Permite que content.js lo reconozca
+  backgroundIframe.src = 'https://web.whatsapp.com/';
+  
+  // Ocultar fuera de pantalla para garantizar que el navegador mantenga activa su ejecución
+  backgroundIframe.style.width = '0px';
+  backgroundIframe.style.height = '0px';
+  backgroundIframe.style.opacity = '0';
+  backgroundIframe.style.position = 'absolute';
+  backgroundIframe.style.top = '-9999px';
+  backgroundIframe.style.left = '-9999px';
+  backgroundIframe.style.border = 'none';
+  
+  document.body.appendChild(backgroundIframe);
+}
+
+function destroyBackgroundIframe() {
+  if (!backgroundIframe) return;
+  console.log('[WA Background] Destruyendo iframe de fondo...');
+  backgroundIframe.remove();
+  backgroundIframe = null;
+}
+
+// Escuchar conexiones del sidebar
+browser.runtime.onConnect.addListener((port) => {
+  if (port.name === 'sidebar') {
+    console.log('[WA Background] Puerto del sidebar conectado (sidebar abierto).');
+    sidebarPort = port;
+    
+    // Destruir el iframe de fondo inmediatamente para evitar conflicto de sesión única
+    destroyBackgroundIframe();
+    
+    port.onDisconnect.addListener(() => {
+      console.log('[WA Background] Puerto del sidebar desconectado (sidebar cerrado).');
+      sidebarPort = null;
+      
+      // Esperar un momento antes de recrear el de fondo para evitar conflictos de conexiones
+      setTimeout(() => {
+        if (!sidebarPort) {
+          createBackgroundIframe();
+        }
+      }, 2000);
+    });
+  }
+});
+
+// Inicializar el iframe de fondo al arrancar la extensión si el sidebar no está abierto
+setTimeout(() => {
+  if (!sidebarPort) {
+    createBackgroundIframe();
+  }
+}, 1000);

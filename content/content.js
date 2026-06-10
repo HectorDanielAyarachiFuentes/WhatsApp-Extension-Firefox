@@ -25,6 +25,18 @@
   }, 2000);
 
   function init() {
+    const isBackground = (window.name === 'wa-background-iframe');
+
+    if (isBackground) {
+      console.log('[WA Sidebar] Ejecutando en segundo plano (modo notificaciones).');
+      setInterval(() => {
+        scanUnreadChats();
+      }, 1000);
+      setTimeout(scanUnreadChats, 200);
+      return;
+    }
+
+    console.log('[WA Sidebar] Ejecutando en la barra lateral interactiva.');
     // Escanear cada 500ms para que sea "instantáneo"
     setInterval(() => {
       scanUnreadChats();
