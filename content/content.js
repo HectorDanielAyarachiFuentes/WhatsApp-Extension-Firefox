@@ -284,23 +284,61 @@
       
       miniContainer.onclick = (e) => {
         e.stopPropagation();
-        if (chat.rowElement && document.body.contains(chat.rowElement)) {
-            const clickable = chat.rowElement.querySelector('div[role="button"]') || chat.rowElement.querySelector('div[tabindex="-1"]') || chat.rowElement;
-            if (clickable && typeof clickable.click === 'function') clickable.click();
-        } else {
-            // Intentar encontrarlo en el DOM si reapareció
-            const span = document.querySelector(`span[title="${chat.name}"]`);
-            if (span) {
-                let current = span;
-                for (let i=0; i<5; i++) {
-                    if (current && (current.getAttribute('role')==='button' || current.getAttribute('tabindex')==='-1')) {
-                        current.click();
-                        return;
+        
+        // WhatsApp desmonta los chats cuando la lista mide 0px.
+        // Para hacer clic, tenemos que "engañar" a WhatsApp expandiendo la lista 
+        // de forma invisible por una fracción de segundo para que React la vuelva a cargar.
+        const resizer = document.getElementById('wa-extension-resizer');
+        let leftPane = null;
+        if (resizer) leftPane = resizer.parentElement;
+
+        if (leftPane) {
+            // Guardar estilos originales
+            const oldWidth = leftPane.style.width;
+            
+            // Expandir de forma invisible usando margin negativo para que no mueva el flexbox
+            leftPane.style.opacity = '0.01'; // Casi invisible
+            leftPane.style.marginLeft = '-300px'; // Compensa los 300px de ancho
+            
+            leftPane.style.flexBasis = '300px';
+            leftPane.style.width = '300px';
+            leftPane.style.minWidth = '300px';
+
+            // Esperar 300ms a que React reaccione y renderice el DOM
+            setTimeout(() => {
+                let clicked = false;
+                
+                // Buscar dentro del contenedor de chats específicamente
+                const span = document.querySelector(`#pane-side span[title="${chat.name}"], #side span[title="${chat.name}"], [aria-label="Lista de chats"] span[title="${chat.name}"]`);
+                
+                if (span) {
+                    let current = span;
+                    for (let i=0; i<6; i++) {
+                        if (current && (current.getAttribute('role')==='button' || current.getAttribute('role')==='row' || current.getAttribute('role')==='listitem' || current.getAttribute('tabindex')==='-1')) {
+                            // WhatsApp usa mousedown para la mayoría de sus interacciones de lista
+                            current.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                            current.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                            current.click();
+                            clicked = true;
+                            break;
+                        }
+                        current = current.parentElement;
                     }
-                    current = current.parentElement;
+                    if (!clicked) {
+                        span.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                        span.click();
+                    }
                 }
-                span.click();
-            }
+
+                // Restaurar el estado colapsado
+                leftPane.style.position = 'relative'; 
+                leftPane.style.opacity = '1';
+                leftPane.style.marginLeft = '0px';
+                
+                leftPane.style.flexBasis = '0px';
+                leftPane.style.width = '0px';
+                leftPane.style.minWidth = '0px';
+            }, 300);
         }
       };
 
