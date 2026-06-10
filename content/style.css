@@ -18,6 +18,39 @@ div[class*="app-wrapper"],
     min-width: 0 !important;
 }
 
+/* Quitar la línea divisoria blanca vertical de WhatsApp (incluyendo propiedades lógicas modernas) */
+#side, 
+#main, 
+#app header, 
+.two > div,
+.two > div > div,
+div[data-testid="chat-list"] {
+    border-right: none !important;
+    border-left: none !important;
+    border-inline-end: none !important;
+    border-inline-start: none !important;
+    box-shadow: none !important;
+}
+
+/* WhatsApp a veces usa pseudo-elementos ::after para los bordes */
+#side::after, 
+#main::after, 
+#app header::after, 
+.two > div::after, 
+.two > div > div::after,
+.two::after,
+div[data-testid="chat-list"]::after {
+    display: none !important;
+    border: none !important;
+    width: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Si WhatsApp usa un gap en el layout flex con fondo blanco */
+.two {
+    gap: 0 !important;
+}
+
 /* Ocultar scrollbar horizontal en cualquier lugar */
 ::-webkit-scrollbar:horizontal {
     display: none !important;
