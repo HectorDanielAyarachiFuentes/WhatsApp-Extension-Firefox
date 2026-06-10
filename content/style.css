@@ -39,12 +39,14 @@ div[class*="app-wrapper"],
     cursor: ew-resize;
     z-index: 9999;
     background-color: transparent;
+}
+
+/* Solo la barra de la lista de chats tendrá el efecto visual verde */
+#wa-extension-resizer {
     transition: background-color 0.2s ease;
 }
 
 #wa-extension-resizer:hover,
-#wa-extension-resizer:active,
-#wa-extension-nav-resizer:hover,
-#wa-extension-nav-resizer:active {
+#wa-extension-resizer:active {
     background-color: #00a884; /* Color verde de WhatsApp */
 }
