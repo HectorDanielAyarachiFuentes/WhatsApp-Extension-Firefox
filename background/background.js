@@ -50,10 +50,26 @@ browser.storage.onChanged.addListener((changes, area) => {
 const ICON_NORMAL = 'icons/WhatsApp.svg';
 
 // Escuchar mensajes del content script Y del popup
-browser.runtime.onMessage.addListener((message, sender) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // El popup pide los datos de chats no leídos
   if (message.type === 'get_unread') {
-    return Promise.resolve({ chats: unreadChats });
+    sendResponse({ chats: unreadChats });
+  } else if (message.type === 'quick_reply') {
+    // Reenviar el mensaje de respuesta rápida al content.js en la pestaña
+    browser.tabs.query({ url: "*://web.whatsapp.com/*" }).then(tabs => {
+      tabs.forEach(tab => {
+        browser.tabs.sendMessage(tab.id, message).catch(() => {});
+      });
+    });
+
+    // Enviar el mensaje de respuesta rápida al iframe de fondo (si la sidebar está cerrada)
+    const bgIframe = document.getElementById('wa-background-iframe');
+    if (bgIframe && bgIframe.contentWindow) {
+      bgIframe.contentWindow.postMessage(message, '*');
+    }
+
+    // Devolvemos true inmediatamente para que el popup sepa que se envió la orden
+    sendResponse({ success: true });
   }
 
   // El content script envía actualización de chats no leídos
@@ -67,13 +83,23 @@ browser.runtime.onMessage.addListener((message, sender) => {
       browser.browserAction.setBadgeBackgroundColor({ color: '#25D366' });
       browser.browserAction.setBadgeText({ text: String(totalContacts) });
 
-      // Tooltip detallado con vista previa
-      let tooltipText = `📩 ${totalContacts} chat(s) con mensajes nuevos:\n\n`;
+      // Tooltip detallado con vista previa premium
+      let tooltipText = `🟢 WHATSAPP WEB\n━━━━━━━━━━━━━━━━━━━━━━\nTienes ${totalContacts} chat${totalContacts > 1 ? 's' : ''} sin leer\n\n`;
+      
       unreadChats.forEach(c => {
-        const previewText = c.preview ? c.preview : 'Vista previa no disponible';
-        tooltipText += `👤 ${c.name} (${c.count}):\n"${previewText}"\n\n`;
+        // Acortar el nombre si es muy largo
+        let safeName = c.name.length > 20 ? c.name.substring(0, 17) + '...' : c.name;
+        
+        // Mostrar todo el mensaje completo
+        let previewText = c.preview ? c.preview : '📷 Archivo adjunto o sticker';
+        
+        let msgsWord = c.count === 1 ? 'mensaje' : 'mensajes';
+        tooltipText += `👤 ${safeName}  [ ${c.count} ${msgsWord} ]\n💬 "${previewText}"\n\n`;
       });
-      browser.browserAction.setTitle({ title: tooltipText.trim() });
+      
+      tooltipText += `━━━━━━━━━━━━━━━━━━━━━━\n👆 Haz clic para abrir el panel`;
+      
+      browser.browserAction.setTitle({ title: tooltipText });
 
 
       // Notificaciones de escritorio para contactos NUEVOS
@@ -173,6 +199,18 @@ browser.notifications.onClicked.addListener((notifId) => {
 
 // ===== 4. Menú contextual (Clic derecho en el icono) =====
 browser.menus.create({
+  id: "open-popup-preview",
+  title: "💬 Ver mensajes nuevos (Popup)",
+  contexts: ["browser_action"]
+});
+
+browser.menus.create({
+  id: "separator-popup",
+  type: "separator",
+  contexts: ["browser_action"]
+});
+
+browser.menus.create({
   id: "open-full",
   title: "Abrir WhatsApp en pestaña completa",
   contexts: ["browser_action"]
@@ -190,8 +228,22 @@ browser.menus.create({
   contexts: ["browser_action"]
 });
 
-browser.menus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "open-full") {
+// Listener del menú
+browser.menus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "open-popup-preview") {
+    try {
+      // 1. Asignar el popup temporalmente
+      await browser.browserAction.setPopup({ popup: "popup/popup.html" });
+      // 2. Abrirlo (posible gracias al manejador de evento de usuario)
+      await browser.browserAction.openPopup();
+      // 3. Quitar el popup para no romper el clic izquierdo
+      await browser.browserAction.setPopup({ popup: "" });
+    } catch (error) {
+      console.error("Error al intentar abrir el popup:", error);
+      // Asegurarse de quitarlo en caso de error
+      browser.browserAction.setPopup({ popup: "" });
+    }
+  } else if (info.menuItemId === "open-full") {
     browser.tabs.create({ url: "https://web.whatsapp.com/" });
   } else if (info.menuItemId === "open-settings") {
     browser.runtime.openOptionsPage();
@@ -211,9 +263,10 @@ function createBackgroundIframe() {
   backgroundIframe.name = 'wa-background-iframe'; // Permite que content.js lo reconozca
   backgroundIframe.src = 'https://web.whatsapp.com/';
   
-  // Ocultar fuera de pantalla para garantizar que el navegador mantenga activa su ejecución
-  backgroundIframe.style.width = '0px';
-  backgroundIframe.style.height = '0px';
+  // Ocultar fuera de pantalla pero darle un tamaño real para que WhatsApp renderice 
+  // la interfaz y permita hacer focus() o pegar texto.
+  backgroundIframe.style.width = '800px';
+  backgroundIframe.style.height = '600px';
   backgroundIframe.style.opacity = '0';
   backgroundIframe.style.position = 'absolute';
   backgroundIframe.style.top = '-9999px';

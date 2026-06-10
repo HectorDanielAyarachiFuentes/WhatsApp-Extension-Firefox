@@ -192,3 +192,46 @@ body {
 #open-whatsapp:hover {
   background: #1da851;
 }
+
+/* === Quick Reply === */
+.quick-reply-container {
+  display: flex;
+  margin-top: 10px;
+  gap: 8px;
+}
+.quick-reply-input {
+  flex: 1;
+  background: #2a3942;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e9edef;
+  font-size: 13px;
+  outline: none;
+}
+.quick-reply-input:focus {
+  background: #32434d;
+}
+.quick-reply-btn {
+  background: #25D366;
+  color: #111b21;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+.quick-reply-btn:hover {
+  background: #1da851;
+}
+.quick-reply-btn:disabled {
+  background: #2a3942;
+  color: #8696a0;
+  cursor: not-allowed;
+}
+

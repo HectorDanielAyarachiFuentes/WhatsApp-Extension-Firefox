@@ -598,4 +598,102 @@
 
     return '';
   }
+
+  // --- Lógica de Respuesta Rápida ---
+  const handleQuickReply = async (contactName, text) => {
+      // Buscar el chat en la lista
+      const chatRows = getChatRows();
+      let targetRow = null;
+      for (const row of chatRows) {
+        if (extractContactName(row) === contactName) {
+          targetRow = row;
+          break;
+        }
+      }
+
+      if (targetRow) {
+        // Simular clic para abrir el chat usando la misma técnica robusta de los mini-chats
+        const span = targetRow.querySelector(`span[title="${contactName}"]`);
+        if (span) {
+            let current = span;
+            let handled = false;
+            for (let i=0; i<6; i++) {
+                if (current && (current.getAttribute('role')==='button' || current.getAttribute('role')==='row' || current.getAttribute('role')==='listitem' || current.getAttribute('tabindex')==='-1')) {
+                    current.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                    current.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                    current.click();
+                    handled = true;
+                    break;
+                }
+                current = current.parentElement;
+            }
+            if (!handled) {
+                span.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                span.click();
+            }
+        } else {
+            // Fallback
+            targetRow.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+            targetRow.click();
+        }
+
+        // Esperar a que la caja de texto cargue
+        let composeBox = null;
+        for (let i = 0; i < 20; i++) {
+          await new Promise(r => setTimeout(r, 100)); // Esperar 100ms
+          composeBox = document.querySelector('[data-testid="conversation-compose-box-input"], div[contenteditable="true"][data-tab="10"]');
+          if (composeBox) break;
+        }
+
+        if (composeBox) {
+          composeBox.focus();
+
+          // 1. Intentar con execCommand (el más estándar para contenteditable)
+          document.execCommand('insertText', false, text);
+
+          // 2. Disparar evento Input nativo para despertar a React
+          composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+
+          // 3. Forzar el paste event (para Lexical Editor)
+          const dataTransfer = new DataTransfer();
+          dataTransfer.setData('text/plain', text);
+          composeBox.dispatchEvent(new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+          }));
+          
+          // Esperar a que el botón de enviar aparezca
+          setTimeout(() => {
+            let sendBtn = document.querySelector('[data-testid="send"], [aria-label="Enviar"], span[data-icon="send"]');
+            if (sendBtn) {
+              if (sendBtn.tagName === 'SPAN' || sendBtn.tagName === 'svg' || sendBtn.tagName === 'path') {
+                  sendBtn = sendBtn.closest('button') || sendBtn.parentElement;
+              }
+              sendBtn.click();
+            } else {
+              // Fallback hiper-agresivo con Enter
+              composeBox.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 }));
+              composeBox.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 }));
+              composeBox.dispatchEvent(new KeyboardEvent('keyup',   { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 }));
+            }
+          }, 400); // Darle 400ms a React
+        }
+      }
+  };
+
+  // Listener para Pestañas normales
+  browser.runtime.onMessage.addListener(async (message) => {
+    if (message.type === 'quick_reply') {
+      await handleQuickReply(message.contact, message.message);
+    }
+  });
+
+  // Listener para iframes (Background/Sidebar)
+  window.addEventListener('message', async (event) => {
+    if (event.data && event.data.type === 'quick_reply') {
+      await handleQuickReply(event.data.contact, event.data.message);
+    }
+  });
+
 })();

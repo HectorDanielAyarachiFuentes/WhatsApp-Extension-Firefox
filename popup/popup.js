@@ -80,6 +80,59 @@
       card.appendChild(noMsg);
     }
 
+    // --- Respuesta Rápida ---
+    const replyContainer = document.createElement('div');
+    replyContainer.className = 'quick-reply-container';
+
+    const replyInput = document.createElement('input');
+    replyInput.type = 'text';
+    replyInput.className = 'quick-reply-input';
+    replyInput.placeholder = 'Escribe una respuesta rápida...';
+
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'quick-reply-btn';
+    replyBtn.innerHTML = '➤'; // Icono de flecha (enviar)
+
+    // Lógica para enviar
+    const handleSend = async () => {
+      const text = replyInput.value.trim();
+      if (!text) return;
+
+      replyInput.disabled = true;
+      replyBtn.disabled = true;
+      replyBtn.innerHTML = '...';
+
+      // Enviar la orden al background
+      const result = await browser.runtime.sendMessage({
+        type: 'quick_reply',
+        contact: chat.name,
+        message: text
+      });
+
+      if (result && result.success) {
+        replyInput.value = '';
+        replyInput.placeholder = 'Enviado ✓';
+        replyBtn.innerHTML = '✔';
+        setTimeout(() => {
+          window.close(); // Cerramos el popup después de enviar exitosamente (como no especificó, asumimos buen UX)
+        }, 800);
+      } else {
+        replyInput.disabled = false;
+        replyBtn.disabled = false;
+        replyBtn.innerHTML = '➤';
+        alert('Error al enviar. Asegúrate de que WhatsApp Web esté cargado.');
+      }
+    };
+
+    replyBtn.addEventListener('click', handleSend);
+    replyInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSend();
+    });
+
+    replyContainer.appendChild(replyInput);
+    replyContainer.appendChild(replyBtn);
+    card.appendChild(replyContainer);
+
     previewContainer.appendChild(card);
 
     // --- Click en tab ---
