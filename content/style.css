@@ -27,3 +27,21 @@ div[class*="app-wrapper"],
 * {
     scrollbar-width: thin !important;
 }
+
+/* Estilos para el resizer del panel izquierdo */
+#wa-extension-resizer {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 9999;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+#wa-extension-resizer:hover,
+#wa-extension-resizer:active {
+    background-color: #00a884; /* Color verde de WhatsApp */
+}

@@ -24,9 +24,71 @@
 
   function init() {
     // Escanear cada 500ms para que sea "instantáneo"
-    setInterval(scanUnreadChats, 500);
+    setInterval(() => {
+      scanUnreadChats();
+      setupResizer(); // Asegurar que el resizer exista siempre
+    }, 500);
     // Escaneo inicial rápido
     setTimeout(scanUnreadChats, 200);
+  }
+
+  function setupResizer() {
+    if (document.getElementById('wa-extension-resizer')) return;
+
+    const sidePanel = document.getElementById('side') || document.querySelector('[data-testid="chat-list"]');
+    if (!sidePanel) return;
+
+    // Buscar el contenedor principal de la lista de chats que define el ancho
+    // Normalmente es el padre de #side que tiene un flex-basis o ancho establecido,
+    // o simplemente tomamos el padre directo si no encontramos algo obvio.
+    let leftPane = sidePanel.closest('[style*="flex-basis"]');
+    if (!leftPane) {
+      // Intento heurístico de encontrar el contenedor izquierdo
+      let current = sidePanel;
+      for (let i = 0; i < 5; i++) {
+        if (current.parentElement && current.parentElement.classList.contains('two')) {
+          leftPane = current;
+          break;
+        }
+        current = current.parentElement;
+      }
+      if (!leftPane) leftPane = sidePanel.parentElement;
+    }
+
+    if (!leftPane) return;
+
+    const resizer = document.createElement('div');
+    resizer.id = 'wa-extension-resizer';
+    
+    // Asegurar posicionamiento relativo en el panel para anclar el resizer
+    leftPane.style.position = 'relative';
+    leftPane.appendChild(resizer);
+    
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', function(e) {
+      isResizing = true;
+      document.body.style.cursor = 'col-resize';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isResizing) return;
+      const newWidth = e.clientX;
+      // Permitir un ancho desde 150px hasta 800px (o el ancho de la ventana)
+      if (newWidth >= 150 && newWidth <= window.innerWidth - 300) {
+        leftPane.style.flexBasis = `${newWidth}px`;
+        leftPane.style.maxWidth = `${newWidth}px`;
+        leftPane.style.width = `${newWidth}px`;
+      }
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+      }
+    });
   }
 
   function scanUnreadChats() {
