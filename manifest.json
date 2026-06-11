@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "WhatsApp Sidebar",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Abre WhatsApp Web en la barra lateral de Firefox.",
   "browser_specific_settings": {
     "gecko": {
