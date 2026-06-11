@@ -90,12 +90,10 @@ div[data-testid="chat-list"]::after {
     background: linear-gradient(to right, transparent 5px, #00a884 5px, #00a884 11px, transparent 11px);
 }
 
-/* Quitar hover/active del resizer de la lista de chats para que no parpadee si no queremos */
-/* Pero el usuario dijo que la línea verde le gusta, así que no lo quitamos de #wa-extension-resizer */
-/* Si queremos solo en el nav-resizer: */
+/* Línea celeste delgada para el resizer del lado izquierdo (barra de navegación) */
 #wa-extension-nav-resizer:hover,
 #wa-extension-nav-resizer:active {
-    background-color: transparent !important;
+    background: linear-gradient(to right, transparent 7px, #00ddff 7px, #00ddff 9px, transparent 9px);
 }
 
 /* === Estilos para los chats miniatura en la barra de navegación === */
@@ -145,18 +143,23 @@ div[data-testid="chat-list"]::after {
     object-fit: cover;
 }
 
-/* Modo colapsado: Hace que todo el panel sea invisible y no clickeable, excepto el resizer */
+/* Modo colapsado: Oculta el contenido de WhatsApp sin afectar al resizer */
 .wa-is-collapsed {
-    opacity: 0.001 !important;
     pointer-events: none !important;
+    background: transparent !important;
 }
 
-.wa-is-collapsed * {
+/* Aplicar la invisibilidad solo a los contenedores internos de WhatsApp, NO al contenedor padre ni al resizer */
+.wa-is-collapsed > div:not(#wa-extension-resizer),
+.wa-is-collapsed > span,
+.wa-is-collapsed > header {
+    opacity: 0.001 !important;
     pointer-events: none !important;
 }
 
 #wa-extension-resizer {
     pointer-events: auto !important;
+    opacity: 1 !important;
 }
 
 /* Corrección para que el panel de emojis/stickers/GIFs se alinee correctamente cuando el chat list está colapsado */

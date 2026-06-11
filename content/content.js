@@ -110,6 +110,40 @@
             e.preventDefault();
           });
 
+          // Toggle con doble clic
+          resizer.addEventListener('dblclick', function(e) {
+             const currentWidth = leftPane.getBoundingClientRect().width;
+             const marginRight = parseInt(getComputedStyle(leftPane).marginRight) || 0;
+             
+             if (currentWidth < 150 || marginRight < -100) {
+                 // Expandir a 350px (ancho ideal)
+                 leftPane.style.flexBasis = `350px`;
+                 leftPane.style.maxWidth = `350px`;
+                 leftPane.style.width = `350px`;
+                 leftPane.style.minWidth = `350px`;
+                 leftPane.style.marginLeft = `0px`;
+                 leftPane.style.marginRight = `0px`;
+                 leftPane.style.visibility = '';
+                 leftPane.classList.remove('wa-is-collapsed');
+                 resizer.style.left = 'auto';
+                 resizer.style.right = '-8px';
+             } else {
+                 // Colapsar
+                 leftPane.style.flexBasis = `300px`;
+                 leftPane.style.maxWidth = `300px`;
+                 leftPane.style.width = `300px`;
+                 leftPane.style.minWidth = `300px`;
+                 leftPane.style.marginLeft = `0px`;
+                 leftPane.style.marginRight = `-300px`; 
+                 leftPane.style.visibility = '';
+                 leftPane.classList.add('wa-is-collapsed');
+                 resizer.style.left = '0px';
+                 resizer.style.right = 'auto';
+             }
+             e.preventDefault();
+             e.stopPropagation();
+          });
+
           // Usamos window para el mousemove en caso de que el ratón salga del panel
           const onMouseMove = function(e) {
             if (!isResizing) return;
@@ -221,6 +255,14 @@
               document.body.style.cursor = 'col-resize';
               e.preventDefault();
               e.stopPropagation();
+            });
+
+            // Añadir funcionalidad de doble clic también a este resizer
+            navResizer.addEventListener('dblclick', function(e) {
+                // Reutilizamos la lógica enviando un mensaje a la propia ventana
+                window.postMessage({ type: 'toggle_internal_panel' }, '*');
+                e.preventDefault();
+                e.stopPropagation();
             });
 
             const onNavMouseMove = function(e) {
@@ -694,6 +736,45 @@
   window.addEventListener('message', async (event) => {
     if (event.data && event.data.type === 'quick_reply') {
       await handleQuickReply(event.data.contact, event.data.message);
+    } else if (event.data && event.data.type === 'toggle_internal_panel') {
+      const resizer = document.getElementById('wa-extension-resizer');
+      if (resizer && resizer.parentElement) {
+         const leftPane = resizer.parentElement;
+         const currentWidth = leftPane.getBoundingClientRect().width;
+         const marginRight = parseInt(getComputedStyle(leftPane).marginRight) || 0;
+         
+         // 350px es un buen ancho "ideal"
+         // Si es menor a 150 o tiene un margen negativo profundo (colapsado), lo abrimos a 350px
+         if (currentWidth < 150 || marginRight < -100) {
+            leftPane.style.flexBasis = `350px`;
+            leftPane.style.maxWidth = `350px`;
+            leftPane.style.width = `350px`;
+            leftPane.style.minWidth = `350px`;
+            
+            leftPane.style.marginLeft = `0px`;
+            leftPane.style.marginRight = `0px`;
+            leftPane.style.visibility = '';
+            leftPane.classList.remove('wa-is-collapsed');
+            
+            resizer.style.left = 'auto';
+            resizer.style.right = '-8px';
+         } else {
+            // Si está abierto, lo colapsamos para "esconderlo" (dejando solo la barra de nav rail visible si es posible)
+            // Usamos la misma lógica que en el mousemove de collapse
+            leftPane.style.flexBasis = `300px`;
+            leftPane.style.maxWidth = `300px`;
+            leftPane.style.width = `300px`;
+            leftPane.style.minWidth = `300px`;
+            
+            leftPane.style.marginLeft = `0px`;
+            leftPane.style.marginRight = `-300px`; 
+            leftPane.style.visibility = '';
+            leftPane.classList.add('wa-is-collapsed');
+            
+            resizer.style.left = '0px';
+            resizer.style.right = 'auto';
+         }
+      }
     }
   });
 

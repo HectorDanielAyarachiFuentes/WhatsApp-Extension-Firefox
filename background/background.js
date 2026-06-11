@@ -22,9 +22,27 @@ browser.webRequest.onHeadersReceived.addListener(
   ["blocking", "responseHeaders"]
 );
 
-// ===== 2. Clic en el icono: alternar sidebar =====
+// ===== 2. Clic en el icono: alternar sidebar o panel interno =====
 browser.browserAction.onClicked.addListener(() => {
-  browser.sidebarAction.toggle();
+  if (sidebarPort) {
+    browser.notifications.create({
+      type: 'basic',
+      iconUrl: browser.runtime.getURL('icons/WhatsApp.svg'),
+      title: 'Botón superior presionado',
+      message: 'La barra lateral ya está abierta. Enviando orden de expandir/colapsar al contenido.'
+    });
+    // Si la barra ya está abierta, no la cerramos, solo mandamos la orden de expandir/colapsar internamente
+    sidebarPort.postMessage({ type: 'toggle_internal_panel' });
+  } else {
+    browser.notifications.create({
+      type: 'basic',
+      iconUrl: browser.runtime.getURL('icons/WhatsApp.svg'),
+      title: 'Botón superior presionado',
+      message: 'La barra estaba cerrada. Abriendo barra lateral.'
+    });
+    // Si está cerrada, la abrimos
+    browser.sidebarAction.open();
+  }
 });
 
 // ===== 3. Sistema de notificaciones de mensajes no leídos =====
