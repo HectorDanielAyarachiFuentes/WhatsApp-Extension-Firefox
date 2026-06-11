@@ -18,6 +18,7 @@
 
   let isChatListCollapsed = false;
   let previousActiveChatsNames = '';
+  const ignoredContacts = new Map(); // Para ignorar contactos recién respondidos
 
   // Esperar a que WhatsApp cargue completamente
   let initAttempts = 0;
@@ -504,6 +505,15 @@
         // Filtrar nombres de secciones que no son contactos
         if (BLACKLIST.includes(name.toLowerCase().trim())) return;
 
+        // Ignorar temporalmente a los contactos que acabamos de responder (5 segundos)
+        if (ignoredContacts.has(name)) {
+          if (Date.now() - ignoredContacts.get(name) < 5000) {
+            return;
+          } else {
+            ignoredContacts.delete(name);
+          }
+        }
+
         const preview = extractMessagePreview(chatRow);
         const time = extractTime(chatRow);
 
@@ -720,6 +730,30 @@
               composeBox.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 }));
               composeBox.dispatchEvent(new KeyboardEvent('keyup',   { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13 }));
             }
+            
+            // Ignorar este contacto por 5 segundos para darle tiempo a WhatsApp de borrar el circulito verde
+            ignoredContacts.set(contactName, Date.now());
+            
+            // Cerrar el chat abierto enviando la tecla Escape, así los nuevos mensajes de esta persona 
+            // no se marcan como leídos automáticamente por estar el chat abierto en segundo plano.
+            setTimeout(() => {
+              const target = document.activeElement || document.body;
+              const appRoot = document.querySelector('#app') || document.body;
+              
+              ['keydown', 'keyup'].forEach(type => {
+                  const escEvent = new KeyboardEvent(type, { 
+                      bubbles: true, 
+                      cancelable: true, 
+                      key: 'Escape', 
+                      code: 'Escape', 
+                      keyCode: 27,
+                      which: 27
+                  });
+                  target.dispatchEvent(escEvent);
+                  appRoot.dispatchEvent(escEvent);
+              });
+            }, 500);
+
           }, 400); // Darle 400ms a React
         }
       }

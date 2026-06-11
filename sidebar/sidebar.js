@@ -5,11 +5,11 @@
   const port = browser.runtime.connect({ name: 'sidebar' });
 
   // Escuchar mensajes desde background y reenviarlos al iframe de WhatsApp
-  port.onMessage.addListener((msg) => {
-    if (msg.type === 'toggle_internal_panel') {
-      const iframe = document.querySelector('iframe');
+  port.onMessage.addListener((message) => {
+    if (message.type === 'toggle_internal_panel' || message.type === 'quick_reply') {
+      const iframe = document.getElementById('wa-iframe');
       if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage(msg, '*');
+        iframe.contentWindow.postMessage(message, '*');
       }
     }
   });

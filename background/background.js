@@ -70,29 +70,63 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 const ICON_NORMAL = 'icons/WhatsApp.svg';
 
+function updateUnreadUI(oldChats) {
+  const totalContacts = unreadChats.length;
+  
+  if (totalContacts > 0) {
+    browser.browserAction.setBadgeText({ text: totalContacts.toString() });
+    browser.browserAction.setBadgeBackgroundColor({ color: '#25D366' });
+
+    let tooltipText = `🟢 WHATSAPP WEB\n━━━━━━━━━━━━━━━━━━━━━━\nTienes ${totalContacts} chat${totalContacts > 1 ? 's' : ''} sin leer\n\n`;
+    
+    unreadChats.forEach(c => {
+      let safeName = c.name.length > 20 ? c.name.substring(0, 17) + '...' : c.name;
+      let previewText = c.preview ? c.preview : '📷 Archivo adjunto o sticker';
+      let msgsWord = c.count === 1 ? 'mensaje' : 'mensajes';
+      tooltipText += `👤 ${safeName}  [ ${c.count} ${msgsWord} ]\n💬 "${previewText}"\n\n`;
+    });
+    
+    tooltipText += `━━━━━━━━━━━━━━━━━━━━━━\n👆 Haz clic para abrir el panel`;
+    
+    browser.browserAction.setTitle({ title: tooltipText });
+    if (oldChats) notifyNewContacts(oldChats, unreadChats);
+  } else {
+    browser.browserAction.setBadgeText({ text: '' });
+    browser.browserAction.setTitle({ title: 'Abrir WhatsApp' });
+    previousUnreadNames = [];
+  }
+}
+
 // Escuchar mensajes del content script Y del popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // El popup pide los datos de chats no leídos
   if (message.type === 'get_unread') {
     sendResponse({ chats: unreadChats });
   } else if (message.type === 'test_ringtone') {
     playWhatsAppSound(message.ringtone);
     sendResponse({ success: true });
   } else if (message.type === 'quick_reply') {
-    // Reenviar el mensaje de respuesta rápida al content.js en la pestaña
+    // 1. Reenviar a las pestañas de WhatsApp
     browser.tabs.query({ url: "*://web.whatsapp.com/*" }).then(tabs => {
       tabs.forEach(tab => {
         browser.tabs.sendMessage(tab.id, message).catch(() => {});
       });
     });
 
-    // Enviar el mensaje de respuesta rápida al iframe de fondo (si la sidebar está cerrada)
+    // 2. Reenviar al sidebar si está abierto
+    if (sidebarPort) {
+      sidebarPort.postMessage(message);
+    }
+
+    // 3. Reenviar al iframe de fondo si la sidebar está cerrada
     const bgIframe = document.getElementById('wa-background-iframe');
     if (bgIframe && bgIframe.contentWindow) {
       bgIframe.contentWindow.postMessage(message, '*');
     }
 
-    // Devolvemos true inmediatamente para que el popup sepa que se envió la orden
+    // 4. Actualización optimista: quitar el contacto de la lista de no leídos
+    unreadChats = unreadChats.filter(c => c.name !== message.contact);
+    updateUnreadUI(null);
+
     sendResponse({ success: true });
   }
 
@@ -100,38 +134,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'unread_update') {
     const oldChats = unreadChats;
     unreadChats = message.chats;
-    
-    // Actualizar badge
-    const totalContacts = unreadChats.length;
-    
-    if (totalContacts > 0) {
-      browser.browserAction.setBadgeText({ text: totalContacts.toString() });
-      browser.browserAction.setBadgeBackgroundColor({ color: '#25D366' });
-
-      // Tooltip detallado con vista previa premium
-      let tooltipText = `🟢 WHATSAPP WEB\n━━━━━━━━━━━━━━━━━━━━━━\nTienes ${totalContacts} chat${totalContacts > 1 ? 's' : ''} sin leer\n\n`;
-      
-      unreadChats.forEach(c => {
-        // Acortar el nombre si es muy largo
-        let safeName = c.name.length > 20 ? c.name.substring(0, 17) + '...' : c.name;
-        
-        // Mostrar todo el mensaje completo
-        let previewText = c.preview ? c.preview : '📷 Archivo adjunto o sticker';
-        
-        let msgsWord = c.count === 1 ? 'mensaje' : 'mensajes';
-        tooltipText += `👤 ${safeName}  [ ${c.count} ${msgsWord} ]\n💬 "${previewText}"\n\n`;
-      });
-      
-      tooltipText += `━━━━━━━━━━━━━━━━━━━━━━\n👆 Haz clic para abrir el panel`;
-      
-      browser.browserAction.setTitle({ title: tooltipText });
-      notifyNewContacts(oldChats, unreadChats);
-    } else {
-      // Sin mensajes: limpiar todo
-      browser.browserAction.setBadgeText({ text: '' });
-      browser.browserAction.setTitle({ title: 'Abrir WhatsApp' });
-      previousUnreadNames = [];
-    }
+    updateUnreadUI(oldChats);
   }
 });
 
