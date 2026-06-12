@@ -1,3 +1,8 @@
+/**
+ * @file background/background.js
+ * @description Main extension service worker / event page. Handles browserAction clicks, notification creation, and messaging with the sidebar.
+ * @context Runs in the background page context.
+ */
 // Las cabeceras de red ahora son manejadas por rules.json usando declarativeNetRequest
 
 // ===== 2. Clic en el icono: alternar sidebar o panel interno =====

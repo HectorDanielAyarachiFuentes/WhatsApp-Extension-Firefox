@@ -61,7 +61,15 @@
     {
       "matches": ["*://web.whatsapp.com/*"],
       "css": ["content/style.css"],
-      "js": ["content/content.js"],
+      "js": [
+        "content/state.js",
+        "content/dom.js",
+        "content/resizer.js",
+        "content/miniChats.js",
+        "content/scanner.js",
+        "content/quickReply.js",
+        "content/content.js"
+      ],
       "all_frames": true,
       "run_at": "document_idle"
     }

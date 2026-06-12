@@ -1,3 +1,8 @@
+/**
+ * @file popup/popup.js
+ * @description Handles the extension popup when clicking the icon. Currently delegates to opening the sidebar.
+ * @context Runs in the popup page context.
+ */
 // popup.js — Lógica del popup de previsualización
 
 (async function () {

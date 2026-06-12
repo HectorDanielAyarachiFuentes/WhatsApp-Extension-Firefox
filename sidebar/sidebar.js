@@ -1,3 +1,8 @@
+/**
+ * @file sidebar/sidebar.js
+ * @description Handles UI interactions inside the sidebar container (e.g. collapse toggle button).
+ * @context Runs in the sidebar page context.
+ */
 // sidebar.js — Se inyecta en sidebar.html
 (function() {
   console.log('[WA Sidebar] Sidebar cargado, conectando al script de fondo...');

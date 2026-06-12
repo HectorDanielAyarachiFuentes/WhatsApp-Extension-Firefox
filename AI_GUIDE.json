@@ -1,0 +1,35 @@
+{
+  "_README": "Hello AI! Read this file first before making changes. It describes the architecture and responsibilities of this extension.",
+  "architecture": {
+    "manifest_version": 3,
+    "security_bypass": {
+      "strategy": "DeclarativeNetRequest + Iframe Sandbox",
+      "details": "WhatsApp aggressively prevents iframe embedding (anti-clickjacking). We bypass this by sandboxing the iframe in sidebar.html (omitting allow-top-navigation) and modifying request/response headers via rules.json to spoof a direct top-level navigation.",
+      "files": ["rules.json", "sidebar/sidebar.html"]
+    },
+    "content_scripts": {
+      "strategy": "Modular global state",
+      "details": "content.js was split into multiple files to avoid 800+ lines of spaghetti code. They are injected sequentially. They share state and logic via the `window.WA` object. DO NOT use top-level const/let if they need to be shared, use window.WA instead."
+    }
+  },
+  "modules": {
+    "background/background.js": "Main extension service worker / event page. Handles browserAction clicks, notification creation, and messaging with the sidebar.",
+    "sidebar/sidebar.html": "The HTML file rendered in the Firefox sidebar. Contains the sandboxed iframe that loads web.whatsapp.com.",
+    "sidebar/sidebar.js": "Handles UI interactions inside the sidebar container (e.g. collapse toggle button).",
+    "popup/popup.js": "Handles the extension popup when clicking the icon (if applicable). Currently mostly delegates to opening the sidebar.",
+    "rules.json": "DeclarativeNetRequest rules that strip CSP/Frame-Options and spoof Sec-Fetch-* headers to bypass WhatsApp server blocks.",
+    "content/state.js": "Defines window.WA. Constants, selectors, and shared state (cachedMiniChats, isChatListCollapsed).",
+    "content/dom.js": "DOM manipulation helpers. Extracts text, rows, names, and times from WhatsApp's React DOM.",
+    "content/resizer.js": "Adds draggable edges to the WhatsApp chat list and navigation rail to make them resizable inside the sidebar.",
+    "content/miniChats.js": "Renders floating contact avatars when the left pane is fully collapsed to save space.",
+    "content/scanner.js": "Scans the DOM for unread message badges and sends updates to background.js.",
+    "content/quickReply.js": "Simulates keyboard and clipboard events to automatically send messages without user typing.",
+    "content/content.js": "The main entry point for the content script. Starts Observers and connects all modules."
+  },
+  "important_rules": [
+    "Whenever you modify the responsibility of a file, update this AI_GUIDE.json.",
+    "Do not add webRequest blocking logic back to background.js. We use Manifest V3 declarativeNetRequest.",
+    "If WhatsApp Web updates its UI, update content/state.js (SELECTORS) first.",
+    "All JS files must have a JSDoc block comment at line 1 summarizing what they do."
+  ]
+}
