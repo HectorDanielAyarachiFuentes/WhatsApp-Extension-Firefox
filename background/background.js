@@ -1,67 +1,7 @@
-// ===== 1. Eliminar headers de seguridad para permitir el iframe y el Service Worker =====
-browser.webRequest.onHeadersReceived.addListener(
-  function(info) {
-    const headers = info.responseHeaders.filter(header => {
-      const name = header.name.toLowerCase();
-      const headersToRemove = [
-        'x-frame-options', 
-        'frame-options', 
-        'content-security-policy',
-        'cross-origin-opener-policy',
-        'cross-origin-embedder-policy',
-        'cross-origin-resource-policy'
-      ];
-      return !headersToRemove.includes(name);
-    });
-    return { responseHeaders: headers };
-  },
-  {
-    urls: [
-      "*://*.whatsapp.com/*",
-      "*://*.whatsapp.net/*",
-      "*://*.facebook.com/*",
-      "*://*.fbcdn.net/*"
-    ]
-  },
-  ["blocking", "responseHeaders"]
-);
-
-// ===== 1.5 Falsificar cabeceras de petición para evitar detección de iframe en el servidor =====
-browser.webRequest.onBeforeSendHeaders.addListener(
-  function(details) {
-    let hasOrigin = false;
-    let hasReferer = false;
-
-    for (let i = 0; i < details.requestHeaders.length; i++) {
-      let name = details.requestHeaders[i].name.toLowerCase();
-      if (name === 'origin') {
-        details.requestHeaders[i].value = 'https://web.whatsapp.com';
-        hasOrigin = true;
-      } else if (name === 'referer') {
-        details.requestHeaders[i].value = 'https://web.whatsapp.com/';
-        hasReferer = true;
-      } else if (name === 'sec-fetch-dest' && details.requestHeaders[i].value === 'iframe') {
-        details.requestHeaders[i].value = 'document';
-      } else if (name === 'sec-fetch-site' && details.requestHeaders[i].value === 'cross-site') {
-        details.requestHeaders[i].value = 'same-origin';
-      }
-    }
-
-    if (!hasOrigin && details.type !== 'main_frame' && details.type !== 'sub_frame') {
-      details.requestHeaders.push({ name: 'Origin', value: 'https://web.whatsapp.com' });
-    }
-    if (!hasReferer) {
-      details.requestHeaders.push({ name: 'Referer', value: 'https://web.whatsapp.com/' });
-    }
-
-    return { requestHeaders: details.requestHeaders };
-  },
-  { urls: ["*://*.whatsapp.com/*", "*://*.whatsapp.net/*"] },
-  ["blocking", "requestHeaders"]
-);
+// Las cabeceras de red ahora son manejadas por rules.json usando declarativeNetRequest
 
 // ===== 2. Clic en el icono: alternar sidebar o panel interno =====
-browser.browserAction.onClicked.addListener(() => {
+browser.action.onClicked.addListener(() => {
   if (sidebarPort) {
     browser.notifications.create({
       type: 'basic',

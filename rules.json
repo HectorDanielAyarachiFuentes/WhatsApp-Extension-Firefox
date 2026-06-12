@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "x-frame-options", "operation": "remove" },
+        { "header": "frame-options", "operation": "remove" },
+        { "header": "content-security-policy", "operation": "remove" },
+        { "header": "cross-origin-opener-policy", "operation": "remove" },
+        { "header": "cross-origin-embedder-policy", "operation": "remove" },
+        { "header": "cross-origin-resource-policy", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["whatsapp.com", "whatsapp.net", "facebook.com", "fbcdn.net"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "sec-fetch-dest", "operation": "set", "value": "document" },
+        { "header": "sec-fetch-mode", "operation": "set", "value": "navigate" }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["whatsapp.com", "whatsapp.net"],
+      "resourceTypes": ["sub_frame"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "origin", "operation": "set", "value": "https://web.whatsapp.com" },
+        { "header": "referer", "operation": "set", "value": "https://web.whatsapp.com/" },
+        { "header": "sec-fetch-site", "operation": "set", "value": "same-origin" }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["whatsapp.com", "whatsapp.net"]
+    }
+  }
+]

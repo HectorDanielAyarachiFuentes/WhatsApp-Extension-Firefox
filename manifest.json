@@ -1,7 +1,7 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "WhatsApp Sidebar",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Abre WhatsApp Web en la barra lateral de Firefox.",
   "browser_specific_settings": {
     "gecko": {
@@ -23,7 +23,7 @@
     "48": "icons/WhatsApp.svg",
     "96": "icons/WhatsApp.svg"
   },
-  "browser_action": {
+  "action": {
     "default_icon": "icons/WhatsApp.svg",
     "default_title": "Abrir WhatsApp"
   },
@@ -37,12 +37,26 @@
   "permissions": [
     "menus",
     "storage",
-    "webRequest",
-    "webRequestBlocking",
-    "notifications",
-    "*://web.whatsapp.com/*",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.whatsapp.com/*",
+    "*://*.whatsapp.net/*",
+    "*://*.facebook.com/*",
+    "*://*.fbcdn.net/*",
     "<all_urls>"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
   "content_scripts": [
     {
       "matches": ["*://web.whatsapp.com/*"],
