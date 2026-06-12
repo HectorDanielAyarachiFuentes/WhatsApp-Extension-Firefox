@@ -25,7 +25,13 @@ window.WA.scanner = {
         if (window.WA.BLACKLIST.includes(name.toLowerCase().trim())) return;
 
         if (window.WA.state.ignoredContacts.has(name)) {
-          if (Date.now() - window.WA.state.ignoredContacts.get(name) < 5000) {
+          const timeIgnored = Date.now() - window.WA.state.ignoredContacts.get(name);
+          if (timeIgnored < 5000) {
+            setTimeout(() => {
+              if (window.WA.scanner && window.WA.scanner.scanUnreadChats) {
+                window.WA.scanner.scanUnreadChats();
+              }
+            }, 5000 - timeIgnored + 100);
             return;
           } else {
             window.WA.state.ignoredContacts.delete(name);

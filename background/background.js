@@ -236,31 +236,31 @@ browser.notifications.onClicked.addListener((notifId) => {
 browser.menus.create({
   id: "open-popup-preview",
   title: "💬 Ver mensajes nuevos (Popup)",
-  contexts: ["browser_action"]
+  contexts: ["action"]
 });
 
 browser.menus.create({
   id: "separator-popup",
   type: "separator",
-  contexts: ["browser_action"]
+  contexts: ["action"]
 });
 
 browser.menus.create({
   id: "open-full",
   title: "Abrir WhatsApp en pestaña completa",
-  contexts: ["browser_action"]
+  contexts: ["action"]
 });
 
 browser.menus.create({
   id: "separator-1",
   type: "separator",
-  contexts: ["browser_action"]
+  contexts: ["action"]
 });
 
 browser.menus.create({
   id: "open-settings",
   title: "Configuración y Sobre mí",
-  contexts: ["browser_action"]
+  contexts: ["action"]
 });
 
 // Listener del menú
