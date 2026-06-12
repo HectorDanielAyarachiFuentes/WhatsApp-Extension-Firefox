@@ -13,7 +13,7 @@
     }
   },
   "modules": {
-    "background/background.js": "Main extension service worker / event page. Handles browserAction clicks, notification creation, and messaging with the sidebar.",
+    "background/background.js": "Main extension service worker / event page. Handles action clicks, notification creation, and messaging with the sidebar.",
     "sidebar/sidebar.html": "The HTML file rendered in the Firefox sidebar. Contains the sandboxed iframe that loads web.whatsapp.com.",
     "sidebar/sidebar.js": "Handles UI interactions inside the sidebar container (e.g. collapse toggle button).",
     "popup/popup.js": "Handles the extension popup when clicking the icon (if applicable). Currently mostly delegates to opening the sidebar.",

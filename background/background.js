@@ -1,6 +1,6 @@
 /**
  * @file background/background.js
- * @description Main extension service worker / event page. Handles browserAction clicks, notification creation, and messaging with the sidebar.
+ * @description Main extension service worker / event page. Handles action clicks, notification creation, and messaging with the sidebar.
  * @context Runs in the background page context.
  */
 // Las cabeceras de red ahora son manejadas por rules.json usando declarativeNetRequest
@@ -57,8 +57,8 @@ function updateUnreadUI(oldChats) {
   const totalContacts = unreadChats.length;
   
   if (totalContacts > 0) {
-    browser.browserAction.setBadgeText({ text: totalContacts.toString() });
-    browser.browserAction.setBadgeBackgroundColor({ color: '#25D366' });
+    browser.action.setBadgeText({ text: totalContacts.toString() });
+    browser.action.setBadgeBackgroundColor({ color: '#25D366' });
 
     let tooltipText = `🟢 WHATSAPP WEB\n━━━━━━━━━━━━━━━━━━━━━━\nTienes ${totalContacts} chat${totalContacts > 1 ? 's' : ''} sin leer\n\n`;
     
@@ -71,11 +71,11 @@ function updateUnreadUI(oldChats) {
     
     tooltipText += `━━━━━━━━━━━━━━━━━━━━━━\n👆 Haz clic para abrir el panel`;
     
-    browser.browserAction.setTitle({ title: tooltipText });
+    browser.action.setTitle({ title: tooltipText });
     if (oldChats) notifyNewContacts(oldChats, unreadChats);
   } else {
-    browser.browserAction.setBadgeText({ text: '' });
-    browser.browserAction.setTitle({ title: 'Abrir WhatsApp' });
+    browser.action.setBadgeText({ text: '' });
+    browser.action.setTitle({ title: 'Abrir WhatsApp' });
     previousUnreadNames = [];
   }
 }
@@ -268,15 +268,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "open-popup-preview") {
     try {
       // 1. Asignar el popup temporalmente
-      await browser.browserAction.setPopup({ popup: "popup/popup.html" });
+      await browser.action.setPopup({ popup: "popup/popup.html" });
       // 2. Abrirlo (posible gracias al manejador de evento de usuario)
-      await browser.browserAction.openPopup();
+      await browser.action.openPopup();
       // 3. Quitar el popup para no romper el clic izquierdo
-      await browser.browserAction.setPopup({ popup: "" });
+      await browser.action.setPopup({ popup: "" });
     } catch (error) {
       console.error("Error al intentar abrir el popup:", error);
       // Asegurarse de quitarlo en caso de error
-      browser.browserAction.setPopup({ popup: "" });
+      browser.action.setPopup({ popup: "" });
     }
   } else if (info.menuItemId === "open-full") {
     browser.tabs.create({ url: "https://web.whatsapp.com/" });
