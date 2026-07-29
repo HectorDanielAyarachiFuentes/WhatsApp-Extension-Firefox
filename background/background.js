@@ -288,9 +288,12 @@ browser.menus.onClicked.addListener(async (info, tab) => {
 // ===== 5. Gestión de WhatsApp en segundo plano (Iframe oculto) =====
 let sidebarPort = null;
 let backgroundIframe = null;
+let sidebarTransitioning = false; // Evita recrear el iframe durante transiciones
 
 function createBackgroundIframe() {
   if (backgroundIframe) return; // Ya existe
+  if (sidebarPort) return; // El sidebar está activo, no crear
+  if (sidebarTransitioning) return; // Transición en curso
   
   console.log('[WA Background] Creando iframe de fondo para WhatsApp Web...');
   backgroundIframe = document.createElement('iframe');
@@ -314,6 +317,12 @@ function createBackgroundIframe() {
 function destroyBackgroundIframe() {
   if (!backgroundIframe) return;
   console.log('[WA Background] Destruyendo iframe de fondo...');
+  // Matar la conexión WebSocket de WhatsApp ANTES de remover del DOM
+  // para que no quede una sesión fantasma activa
+  try {
+    backgroundIframe.contentWindow.stop();
+  } catch(e) { /* cross-origin puede fallar, no importa */ }
+  backgroundIframe.src = 'about:blank';
   backgroundIframe.remove();
   backgroundIframe = null;
 }
@@ -323,20 +332,27 @@ browser.runtime.onConnect.addListener((port) => {
   if (port.name === 'sidebar') {
     console.log('[WA Background] Puerto del sidebar conectado (sidebar abierto).');
     sidebarPort = port;
+    sidebarTransitioning = true;
     
     // Destruir el iframe de fondo inmediatamente para evitar conflicto de sesión única
     destroyBackgroundIframe();
     
+    // Dar tiempo a que WhatsApp libere la sesión antes de considerar recrear
+    setTimeout(() => { sidebarTransitioning = false; }, 3000);
+    
     port.onDisconnect.addListener(() => {
       console.log('[WA Background] Puerto del sidebar desconectado (sidebar cerrado).');
       sidebarPort = null;
+      sidebarTransitioning = true;
       
-      // Esperar un momento antes de recrear el de fondo para evitar conflictos de conexiones
+      // Esperar suficiente tiempo para que WhatsApp libere la sesión del sidebar
+      // antes de crear el iframe de fondo (evita el diálogo "otra ventana")
       setTimeout(() => {
+        sidebarTransitioning = false;
         if (!sidebarPort) {
           createBackgroundIframe();
         }
-      }, 2000);
+      }, 5000);
     });
   }
 });
@@ -346,4 +362,4 @@ setTimeout(() => {
   if (!sidebarPort) {
     createBackgroundIframe();
   }
-}, 1000);
+}, 3000);
