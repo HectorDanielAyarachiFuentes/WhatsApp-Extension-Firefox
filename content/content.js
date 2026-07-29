@@ -1,9 +1,12 @@
 /**
  * @file content/content.js
  * @description The main entry point for the content script. Starts Observers and connects all modules.
+ *              Auto-dismissal of the "WhatsApp open in another window" dialog is handled
+ *              by content/autoDismiss.js (runs at document_start).
  * @context Evaluated last in the content_scripts array.
  */
 window.WA = window.WA || {};
+
 
 (function () {
   let initAttempts = 0;

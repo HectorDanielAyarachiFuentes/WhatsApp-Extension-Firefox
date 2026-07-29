@@ -316,15 +316,15 @@ function createBackgroundIframe() {
 
 function destroyBackgroundIframe() {
   if (!backgroundIframe) return;
-  console.log('[WA Background] Destruyendo iframe de fondo...');
-  // Matar la conexión WebSocket de WhatsApp ANTES de remover del DOM
-  // para que no quede una sesión fantasma activa
-  try {
-    backgroundIframe.contentWindow.stop();
-  } catch(e) { /* cross-origin puede fallar, no importa */ }
-  backgroundIframe.src = 'about:blank';
-  backgroundIframe.remove();
+  console.log('[WA Background] Unload suave del iframe de fondo...');
+  // Unload SUAVE: solo cambiar src a about:blank.
+  // NO usar contentWindow.stop() — eso mata la sesión de WhatsApp y fuerza re-escaneo de QR.
+  // El browser hace el unload natural de la página, liberando el WebSocket de forma limpia.
+  const iframeToRemove = backgroundIframe;
+  iframeToRemove.src = 'about:blank';
   backgroundIframe = null;
+  // Remover del DOM después de un tick para dar tiempo al unload natural
+  setTimeout(() => { try { iframeToRemove.remove(); } catch(e) {} }, 800);
 }
 
 // Escuchar conexiones del sidebar
@@ -333,29 +333,34 @@ browser.runtime.onConnect.addListener((port) => {
     console.log('[WA Background] Puerto del sidebar conectado (sidebar abierto).');
     sidebarPort = port;
     sidebarTransitioning = true;
-    
-    // Destruir el iframe de fondo inmediatamente para evitar conflicto de sesión única
+
+    // 1. Unload suave del iframe de fondo (libera WebSocket limpiamente, sin matar sesión)
     destroyBackgroundIframe();
-    
-    // Dar tiempo a que WhatsApp libere la sesión antes de considerar recrear
-    setTimeout(() => { sidebarTransitioning = false; }, 3000);
-    
+
+    // 2. Esperar a que el browser complete el unload natural (~800ms),
+    //    luego avisar al sidebar que puede cargar WhatsApp sin conflicto de sesión.
+    setTimeout(() => {
+      sidebarTransitioning = false;
+      try { port.postMessage({ type: 'sidebar_ready' }); } catch(e) {}
+    }, 1200);
+
     port.onDisconnect.addListener(() => {
       console.log('[WA Background] Puerto del sidebar desconectado (sidebar cerrado).');
       sidebarPort = null;
       sidebarTransitioning = true;
-      
-      // Esperar suficiente tiempo para que WhatsApp libere la sesión del sidebar
-      // antes de crear el iframe de fondo (evita el diálogo "otra ventana")
+
+      // Dar tiempo a que WhatsApp del sidebar cierre su WebSocket antes de
+      // crear el iframe de fondo (evita el diálogo "otra ventana")
       setTimeout(() => {
         sidebarTransitioning = false;
         if (!sidebarPort) {
           createBackgroundIframe();
         }
-      }, 5000);
+      }, 4000);
     });
   }
 });
+
 
 // Inicializar el iframe de fondo al arrancar la extensión si el sidebar no está abierto
 setTimeout(() => {

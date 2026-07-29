@@ -60,6 +60,12 @@
   "content_scripts": [
     {
       "matches": ["*://web.whatsapp.com/*"],
+      "js": ["content/autoDismiss.js"],
+      "all_frames": true,
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://web.whatsapp.com/*"],
       "css": ["content/style.css"],
       "js": [
         "content/state.js",
