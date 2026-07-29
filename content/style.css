@@ -96,6 +96,24 @@ div[data-testid="chat-list"]::after {
     background: linear-gradient(to right, transparent 7px, #00ddff 7px, #00ddff 9px, transparent 9px);
 }
 
+/* === FIX: Cuando el panel está colapsado el resizer se mueve a left:0 y se superpone
+   al área del chat mostrando cursor ew-resize. Lo limitamos a solo 6px de ancho
+   para no interceptar el area de escritura/chat. === */
+#wa-extension-resizer[style*="left: 0"],
+#wa-extension-resizer[style*="left:0"] {
+    width: 6px !important;
+    right: auto !important;
+}
+
+/* Garantizar que el area de texto del chat siempre muestre cursor de texto */
+#main [contenteditable="true"],
+#main footer [contenteditable],
+#main [data-testid="conversation-compose-box-input"],
+#main [role="textbox"] {
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+
 /* === Estilos para los chats miniatura en la barra de navegación === */
 #wa-extension-mini-chats {
     flex-direction: column;
@@ -149,12 +167,19 @@ div[data-testid="chat-list"]::after {
     background: transparent !important;
 }
 
+/* Desactivar pointer-events en TODOS los descendientes (no solo hijos directos)
+   para evitar que WhatsApp re-active clicks en filas de chat anidadas.
+   Esto evita la "columna invisible" que extiende los clicks del panel colapsado. */
+.wa-is-collapsed *:not(#wa-extension-resizer) {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
 /* Aplicar la invisibilidad solo a los contenedores internos de WhatsApp, NO al contenedor padre ni al resizer */
 .wa-is-collapsed > div:not(#wa-extension-resizer),
 .wa-is-collapsed > span,
 .wa-is-collapsed > header {
     opacity: 0.001 !important;
-    pointer-events: none !important;
 }
 
 #wa-extension-resizer {
