@@ -5,7 +5,7 @@
  */
 window.WA = window.WA || {};
 
-window.WA.BLACKLIST = ['archivados', 'archived', 'comunidades', 'communities'];
+window.WA.BLACKLIST = ['archivados', 'archived', 'comunidades', 'communities', 'meta ai', 'meta'];
 
 window.WA.SELECTORS = {
   chatListContainer: '#pane-side, #side, [data-testid="chat-list"], [aria-label="Lista de chats"]',

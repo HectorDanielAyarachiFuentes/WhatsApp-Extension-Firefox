@@ -18,8 +18,10 @@ window.WA.miniChats = {
           currentRows.forEach(row => {
               const img = row.querySelector('img');
               const name = window.WA.dom.extractContactName(row) || '';
-              if (window.WA.BLACKLIST.includes(name.toLowerCase().trim())) return;
-              if (img && img.src) {
+              const cleanName = name.toLowerCase().trim();
+              if (window.WA.BLACKLIST.includes(cleanName) || cleanName.includes('meta ai') || cleanName.includes('meta')) return;
+              if (row.querySelector('[data-icon*="meta"], [aria-label*="Meta"]')) return;
+              if (img && img.src && !img.src.includes('data:image/svg+xml') && !img.src.includes('meta')) {
                   window.WA.state.cachedMiniChats.push({
                       name: name,
                       src: img.src
@@ -36,8 +38,10 @@ window.WA.miniChats = {
         chatRows.forEach(row => {
             const img = row.querySelector('img');
             const name = window.WA.dom.extractContactName(row) || 'Contacto';
-            if (window.WA.BLACKLIST.includes(name.toLowerCase().trim())) return;
-            if (img && img.src) {
+            const cleanName = name.toLowerCase().trim();
+            if (window.WA.BLACKLIST.includes(cleanName) || cleanName.includes('meta ai') || cleanName.includes('meta')) return;
+            if (row.querySelector('[data-icon*="meta"], [aria-label*="Meta"]')) return;
+            if (img && img.src && !img.src.includes('data:image/svg+xml') && !img.src.includes('meta')) {
                 activeChats.push({ name: name, src: img.src, rowElement: row });
             }
         });
@@ -57,18 +61,22 @@ window.WA.miniChats = {
     let topPosition = 250;
     let leftPosition = 12;
 
+    const metaAiIcon = document.querySelector('[aria-label*="Meta"], [title*="Meta"], [data-icon*="meta"]');
     const communitiesBtn = document.querySelector(window.WA.SELECTORS.communitiesBtn);
-    if (communitiesBtn) {
-        const rect = communitiesBtn.getBoundingClientRect();
-        topPosition = rect.bottom + 20;
-        leftPosition = rect.left + (rect.width / 2) - 27; 
-    } else {
-        const icons = document.querySelectorAll(window.WA.SELECTORS.headerIcons);
-        if (icons.length > 0) {
-            const rect = icons[icons.length - 1].getBoundingClientRect();
-            topPosition = rect.bottom + 20;
-            leftPosition = rect.left + (rect.width / 2) - 27;
+    const navIcons = document.querySelectorAll(window.WA.SELECTORS.headerIcons);
+
+    let lowestElement = metaAiIcon || communitiesBtn;
+    if (navIcons.length > 0) {
+        const lastNavIcon = navIcons[navIcons.length - 1];
+        if (!lowestElement || (lastNavIcon.getBoundingClientRect().bottom > lowestElement.getBoundingClientRect().bottom)) {
+            lowestElement = lastNavIcon;
         }
+    }
+
+    if (lowestElement) {
+        const rect = lowestElement.getBoundingClientRect();
+        topPosition = rect.bottom + 15;
+        leftPosition = rect.left + (rect.width / 2) - 27;
     }
 
     const navHeader = window.WA.dom.getNavHeader();

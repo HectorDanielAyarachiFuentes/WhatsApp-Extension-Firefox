@@ -212,5 +212,26 @@ window.WA.resizer = {
               window.WA.state.isChatListCollapsed = (width > 0 && width < 90);
           }
       }
+
+      // Auto-colapsar cuando se abre un drawer completo o panel de Meta AI en la barra lateral
+      const activeDrawer = document.querySelector('div[data-animate-sidebar="true"], div[role="region"] header');
+      if (activeDrawer && window.innerWidth < 450) {
+          const resizerElem = document.getElementById('wa-extension-resizer');
+          if (resizerElem && resizerElem.parentElement) {
+              const lp = resizerElem.parentElement;
+              if (!lp.classList.contains('wa-is-collapsed') && parseInt(getComputedStyle(lp).marginRight) >= 0) {
+                  lp.style.flexBasis = `300px`;
+                  lp.style.maxWidth = `300px`;
+                  lp.style.width = `300px`;
+                  lp.style.minWidth = `300px`;
+                  lp.style.marginLeft = `0px`;
+                  lp.style.marginRight = `-300px`;
+                  lp.style.visibility = '';
+                  lp.classList.add('wa-is-collapsed');
+                  resizerElem.style.left = '0px';
+                  resizerElem.style.right = 'auto';
+              }
+          }
+      }
   }
 };

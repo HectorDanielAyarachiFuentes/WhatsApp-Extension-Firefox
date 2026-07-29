@@ -162,7 +162,7 @@ div[data-testid="chat-list"]::after {
     opacity: 1 !important;
 }
 
-/* Corrección para que el panel de emojis/stickers/GIFs se alinee correctamente cuando el chat list está colapsado */
+/* Corrección para que el panel de emojis/stickers/GIFs y paneles de Meta AI se alineen correctamente */
 body:has(.wa-is-collapsed) #main div[style*="left: -"],
 body:has(.wa-is-collapsed) [role="main"] div[style*="left: -"],
 body:has(.wa-is-collapsed) div:has(input[placeholder*="sticker" i]),
@@ -174,5 +174,19 @@ body:has(.wa-is-collapsed) div[role="region"],
 body:has(.wa-is-collapsed) ._ak7s {
     left: 0 !important;
 }
+
+/* Adaptación de Paneles Desplegables de WhatsApp / Meta AI */
+div[role="region"],
+div[data-animate-sidebar="true"],
+div[style*="position: absolute"][style*="left: 0"] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Evitar que los overlays de IA tapen la barra de navegación lateral izquierda */
+.two > div:first-child {
+    z-index: 10 !important;
+}
+
 
 
