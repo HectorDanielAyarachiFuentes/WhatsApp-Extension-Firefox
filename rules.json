@@ -7,14 +7,12 @@
       "responseHeaders": [
         { "header": "x-frame-options", "operation": "remove" },
         { "header": "frame-options", "operation": "remove" },
-        { "header": "content-security-policy", "operation": "remove" },
-        { "header": "cross-origin-opener-policy", "operation": "remove" },
-        { "header": "cross-origin-embedder-policy", "operation": "remove" },
-        { "header": "cross-origin-resource-policy", "operation": "remove" }
+        { "header": "content-security-policy", "operation": "remove" }
       ]
     },
     "condition": {
-      "requestDomains": ["whatsapp.com", "whatsapp.net", "facebook.com", "fbcdn.net"]
+      "urlFilter": "||web.whatsapp.com",
+      "resourceTypes": ["sub_frame"]
     }
   },
   {
@@ -28,23 +26,8 @@
       ]
     },
     "condition": {
-      "requestDomains": ["whatsapp.com", "whatsapp.net"],
+      "urlFilter": "||web.whatsapp.com",
       "resourceTypes": ["sub_frame"]
-    }
-  },
-  {
-    "id": 3,
-    "priority": 1,
-    "action": {
-      "type": "modifyHeaders",
-      "requestHeaders": [
-        { "header": "origin", "operation": "set", "value": "https://web.whatsapp.com" },
-        { "header": "referer", "operation": "set", "value": "https://web.whatsapp.com/" },
-        { "header": "sec-fetch-site", "operation": "set", "value": "same-origin" }
-      ]
-    },
-    "condition": {
-      "requestDomains": ["whatsapp.com", "whatsapp.net"]
     }
   }
 ]

@@ -21,10 +21,11 @@ window.WA.miniChats = {
               const cleanName = name.toLowerCase().trim();
               if (window.WA.BLACKLIST.includes(cleanName) || cleanName.includes('meta ai') || cleanName.includes('meta')) return;
               if (row.querySelector('[data-icon*="meta"], [aria-label*="Meta"]')) return;
-              if (img && img.src && !img.src.includes('data:image/svg+xml') && !img.src.includes('meta')) {
+              const imgSrc = (img && img.src && !img.src.includes('meta')) ? img.src : null;
+              if (name) {
                   window.WA.state.cachedMiniChats.push({
                       name: name,
-                      src: img.src
+                      src: imgSrc
                   });
               }
           });
@@ -41,9 +42,8 @@ window.WA.miniChats = {
             const cleanName = name.toLowerCase().trim();
             if (window.WA.BLACKLIST.includes(cleanName) || cleanName.includes('meta ai') || cleanName.includes('meta')) return;
             if (row.querySelector('[data-icon*="meta"], [aria-label*="Meta"]')) return;
-            if (img && img.src && !img.src.includes('data:image/svg+xml') && !img.src.includes('meta')) {
-                activeChats.push({ name: name, src: img.src, rowElement: row });
-            }
+            const imgSrc = (img && img.src && !img.src.includes('meta')) ? img.src : null;
+            activeChats.push({ name: name, src: imgSrc, rowElement: row });
         });
     } else {
         activeChats = window.WA.state.cachedMiniChats;
@@ -112,6 +112,8 @@ window.WA.miniChats = {
         miniChatsContainer.style.zIndex = '5'; 
     }
     
+    const defaultAvatar = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23aebac1"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-3.8-1.04-4.84-2.6.03-1.6 3.23-2.4 4.84-2.4s4.81.8 4.84 2.4C15.8 18.96 14.03 20 12 20z"/></svg>`;
+
     miniChatsContainer.innerHTML = ''; 
 
     activeChats.forEach(chat => {
@@ -120,8 +122,11 @@ window.WA.miniChats = {
       miniContainer.title = chat.name;
       
       const clone = document.createElement('img');
-      clone.src = chat.src;
       clone.className = 'wa-mini-chat-img';
+      clone.onerror = () => {
+        clone.src = defaultAvatar;
+      };
+      clone.src = chat.src || defaultAvatar;
       
       miniContainer.appendChild(clone);
       
