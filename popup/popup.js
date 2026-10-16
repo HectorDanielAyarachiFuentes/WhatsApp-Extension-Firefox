@@ -125,7 +125,12 @@
         replyInput.disabled = false;
         replyBtn.disabled = false;
         replyBtn.innerHTML = '➤';
-        alert('Error al enviar. Asegúrate de que WhatsApp Web esté cargado.');
+        replyInput.placeholder = 'Error al enviar: abre WhatsApp en sidebar';
+        replyInput.classList.add('error');
+        setTimeout(() => {
+          replyInput.placeholder = 'Escribe una respuesta rápida...';
+          replyInput.classList.remove('error');
+        }, 3000);
       }
     };
 

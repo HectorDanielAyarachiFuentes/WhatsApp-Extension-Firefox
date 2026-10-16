@@ -66,6 +66,7 @@ window.WA = window.WA || {};
   });
 
   window.addEventListener('message', async (event) => {
+
     if (event.data && event.data.type === 'quick_reply') {
       await window.WA.quickReply.handleQuickReply(event.data.contact, event.data.message);
     } else if (event.data && event.data.type === 'toggle_internal_panel') {

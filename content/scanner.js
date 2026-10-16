@@ -51,8 +51,10 @@ window.WA.scanner = {
     }
 
     try {
+      const isBackground = (window.name === 'wa-background-iframe');
       browser.runtime.sendMessage({
         type: 'unread_update',
+        source: isBackground ? 'background' : 'sidebar',
         chats: unreadChats
       });
     } catch (e) {

@@ -50,7 +50,21 @@ window.WA.quickReply = {
         if (composeBox) {
           composeBox.focus();
 
-          document.execCommand('insertText', false, text);
+          // Intentar insertar texto con la API estándar moderna de InputEvent
+          try {
+            const inputEvent = new InputEvent('beforeinput', {
+              bubbles: true,
+              cancelable: true,
+              inputType: 'insertText',
+              data: text
+            });
+            composeBox.dispatchEvent(inputEvent);
+          } catch (e) {}
+
+          // Fallback con execCommand e input event
+          try {
+            document.execCommand('insertText', false, text);
+          } catch (e) {}
           composeBox.dispatchEvent(new Event('input', { bubbles: true }));
 
           const dataTransfer = new DataTransfer();

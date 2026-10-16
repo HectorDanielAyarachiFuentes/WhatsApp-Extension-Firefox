@@ -77,6 +77,7 @@ function updateUnreadUI(oldChats) {
     browser.action.setBadgeText({ text: '' });
     browser.action.setTitle({ title: 'Abrir WhatsApp' });
     previousUnreadNames = [];
+    clearAllNotifications();
   }
 }
 
@@ -84,26 +85,30 @@ function updateUnreadUI(oldChats) {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'get_unread') {
     sendResponse({ chats: unreadChats });
+    return true;
   } else if (message.type === 'test_ringtone') {
     playWhatsAppSound(message.ringtone);
     sendResponse({ success: true });
+    return true;
   } else if (message.type === 'quick_reply') {
-    // 1. Reenviar a las pestañas de WhatsApp
-    browser.tabs.query({ url: "*://web.whatsapp.com/*" }).then(tabs => {
-      tabs.forEach(tab => {
-        browser.tabs.sendMessage(tab.id, message).catch(() => {});
-      });
-    });
-
-    // 2. Reenviar al sidebar si está abierto
+    // 1. Reenviar con prioridad al sidebar si está abierto
     if (sidebarPort) {
       sidebarPort.postMessage(message);
-    }
-
-    // 3. Reenviar al iframe de fondo si la sidebar está cerrada
-    const bgIframe = document.getElementById('wa-background-iframe');
-    if (bgIframe && bgIframe.contentWindow) {
-      bgIframe.contentWindow.postMessage(message, '*');
+    } else {
+      // 2. Si la sidebar está cerrada, intentar enviar a pestaña activa de WhatsApp
+      browser.tabs.query({ url: "*://web.whatsapp.com/*" }).then(tabs => {
+        if (tabs && tabs.length > 0) {
+          tabs.forEach(tab => {
+            browser.tabs.sendMessage(tab.id, message).catch(() => {});
+          });
+        } else {
+          // 3. Fallback al iframe de fondo
+          const bgIframe = document.getElementById('wa-background-iframe');
+          if (bgIframe && bgIframe.contentWindow) {
+            bgIframe.contentWindow.postMessage(message, '*');
+          }
+        }
+      });
     }
 
     // 4. Actualización optimista: quitar el contacto de la lista de no leídos
@@ -111,12 +116,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateUnreadUI(null);
 
     sendResponse({ success: true });
+    return true;
   }
 
   // El content script envía actualización de chats no leídos
   if (message.type === 'unread_update') {
+    // Si la sidebar está abierta, ignorar actualizaciones del iframe de fondo para evitar parpadeos
+    if (sidebarPort && message.source === 'background') {
+      return;
+    }
     const oldChats = unreadChats;
-    unreadChats = message.chats;
+    unreadChats = message.chats || [];
     updateUnreadUI(oldChats);
   }
 });
@@ -330,6 +340,7 @@ browser.runtime.onConnect.addListener((port) => {
 
   console.log('[WA Background] Sidebar conectado.');
   sidebarPort = port;
+  clearAllNotifications();
 
   // Cuando el sidebar abre NO tocamos el iframe de fondo.
   // autoDismiss.js (en el sidebar) se encarga de hacer clic en "Usar aquí"

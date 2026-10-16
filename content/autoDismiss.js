@@ -13,7 +13,13 @@
 (function autoDismissMultiWindowDialog() {
   'use strict';
 
-  // ─── GUARD: Never run in the background notification iframe ──────────────
+  // ─── GUARD 1: Never run in standard browser tabs (top-level window) ──────
+  // The sidebar runs WhatsApp inside an iframe. Normal tabs are at top-level.
+  if (window.top === window) {
+    return;
+  }
+
+  // ─── GUARD 2: Never run in the background notification iframe ────────────
   // background.js sets backgroundIframe.name = 'wa-background-iframe'.
   // When that iframe runs this script, window.name will be 'wa-background-iframe'.
   // In that case we do NOTHING — WhatsApp will handle the supersession silently.
