@@ -28,7 +28,9 @@
     "default_title": "Abrir WhatsApp"
   },
   "background": {
-    "scripts": ["background/background.js"]
+    "scripts": [
+      "background/background.js"
+    ]
   },
   "options_ui": {
     "page": "options/options.html",
@@ -37,6 +39,8 @@
   "permissions": [
     "menus",
     "storage",
+    "webRequest",
+    "webRequestBlocking",
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess",
     "notifications"
@@ -45,7 +49,8 @@
     "*://*.whatsapp.com/*",
     "*://*.whatsapp.net/*",
     "*://*.facebook.com/*",
-    "*://*.fbcdn.net/*"
+    "*://*.fbcdn.net/*",
+    "<all_urls>"
   ],
   "declarative_net_request": {
     "rule_resources": [
@@ -58,14 +63,22 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://web.whatsapp.com/*"],
-      "js": ["content/autoDismiss.js"],
+      "matches": [
+        "*://web.whatsapp.com/*"
+      ],
+      "js": [
+        "content/autoDismiss.js"
+      ],
       "all_frames": true,
       "run_at": "document_start"
     },
     {
-      "matches": ["*://web.whatsapp.com/*"],
-      "css": ["content/style.css"],
+      "matches": [
+        "*://web.whatsapp.com/*"
+      ],
+      "css": [
+        "content/style.css"
+      ],
       "js": [
         "content/state.js",
         "content/dom.js",

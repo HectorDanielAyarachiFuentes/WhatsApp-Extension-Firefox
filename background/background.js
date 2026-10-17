@@ -3,7 +3,55 @@
  * @description Main extension service worker / event page. Handles action clicks, notification creation, and messaging with the sidebar.
  * @context Runs in the background page context.
  */
-// Las cabeceras de red ahora son manejadas por rules.json usando declarativeNetRequest
+// Las cabeceras de red son manejadas por rules.json (estáticas) Y por session rules (dinámicas).
+// Las session rules se aplican antes del caché del navegador y funcionan correctamente
+// incluso cuando el iframe está alojado dentro de una página moz-extension://.
+
+async function registerSessionHeaderRules() {
+  try {
+    await browser.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [101, 102],
+      addRules: [
+        {
+          id: 101,
+          priority: 2, // Mayor prioridad que las reglas estáticas (priority 1)
+          action: {
+            type: 'modifyHeaders',
+            responseHeaders: [
+              { header: 'x-frame-options',        operation: 'remove' },
+              { header: 'frame-options',           operation: 'remove' },
+              { header: 'content-security-policy', operation: 'remove' }
+            ]
+          },
+          condition: {
+            urlFilter: '||web.whatsapp.com',
+            resourceTypes: ['sub_frame']
+          }
+        },
+        {
+          id: 102,
+          priority: 2,
+          action: {
+            type: 'modifyHeaders',
+            requestHeaders: [
+              { header: 'sec-fetch-dest', operation: 'set', value: 'document' },
+              { header: 'sec-fetch-mode', operation: 'set', value: 'navigate' }
+            ]
+          },
+          condition: {
+            urlFilter: '||web.whatsapp.com',
+            resourceTypes: ['sub_frame']
+          }
+        }
+      ]
+    });
+    console.log('[WA Background] Session rules de cabeceras registradas correctamente.');
+  } catch (e) {
+    console.error('[WA Background] Error al registrar session rules:', e);
+  }
+}
+
+registerSessionHeaderRules();
 
 // ===== 2. Clic en el icono: alternar sidebar o panel interno =====
 browser.action.onClicked.addListener(() => {
