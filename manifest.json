@@ -39,8 +39,6 @@
   "permissions": [
     "menus",
     "storage",
-    "webRequest",
-    "webRequestBlocking",
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess",
     "notifications"
@@ -49,8 +47,7 @@
     "*://*.whatsapp.com/*",
     "*://*.whatsapp.net/*",
     "*://*.facebook.com/*",
-    "*://*.fbcdn.net/*",
-    "<all_urls>"
+    "*://*.fbcdn.net/*"
   ],
   "declarative_net_request": {
     "rule_resources": [

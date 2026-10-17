@@ -61,10 +61,8 @@ window.WA.quickReply = {
             composeBox.dispatchEvent(inputEvent);
           } catch (e) {}
 
-          // Fallback con execCommand e input event
-          try {
-            document.execCommand('insertText', false, text);
-          } catch (e) {}
+          // Fallback: disparar input event para que React/Preact detecte el cambio
+          // document.execCommand('insertText') fue eliminado de los estándares y no debe usarse.
           composeBox.dispatchEvent(new Event('input', { bubbles: true }));
 
           const dataTransfer = new DataTransfer();

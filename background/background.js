@@ -83,11 +83,14 @@ let isSoundMuted = false;
 let isNotifMuted = false;
 let currentRingtone = 'black_mirror';
 
-// Cargar preferencias iniciales
+// Cargar preferencias iniciales — usamos una promesa para evitar la carrera
+// entre el primer mensaje entrante y la resolución del storage.
+let prefsReady = false;
 browser.storage.local.get(['isSoundMuted', 'isNotifMuted', 'ringtone']).then((res) => {
-  isSoundMuted = res.isSoundMuted || false;
-  isNotifMuted = res.isNotifMuted || false;
+  isSoundMuted = res.isSoundMuted ?? false;
+  isNotifMuted = res.isNotifMuted ?? false;
   currentRingtone = res.ringtone || 'black_mirror';
+  prefsReady = true;
 });
 
 // Escuchar cambios en la configuración
@@ -187,16 +190,25 @@ function playWhatsAppSound(forceTone = null) {
     if (toneToPlay === 'black_mirror') {
       const audio = new Audio(browser.runtime.getURL('sounds/black_mirror_text.wav'));
       audio.volume = 0.8;
-      audio.play().catch(e => console.error("Error al reproducir audio local:", e));
+      audio.play().catch(e => console.error('[WA Background] Error al reproducir audio local:', e));
       return;
     }
 
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // webkitAudioContext está deprecated — usar sólo el estándar AudioContext
+    if (typeof AudioContext === 'undefined') {
+      console.warn('[WA Background] AudioContext no disponible en este contexto.');
+      return;
+    }
+
+    const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
     osc.connect(gain);
     gain.connect(ctx.destination);
+
+    // Cerrar el contexto al terminar para liberar recursos
+    osc.onended = () => ctx.close();
     
     if (toneToPlay === 'bubble') {
       // Tono "pop" estilo WhatsApp corto y agudo (Burbuja Original)
@@ -228,7 +240,7 @@ function playWhatsAppSound(forceTone = null) {
     }
 
   } catch(e) {
-    console.error("Audio no soportado:", e);
+    console.error('[WA Background] Audio no soportado:', e);
   }
 }
 

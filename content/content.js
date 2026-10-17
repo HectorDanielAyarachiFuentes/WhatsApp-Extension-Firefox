@@ -27,7 +27,14 @@ window.WA = window.WA || {};
   function init() {
     const isBackground = (window.name === 'wa-background-iframe');
 
-    const observer = new MutationObserver(() => window.WA.scanner.scanUnreadChats());
+    // Debounce el callback del observer: WhatsApp muta el DOM muy frecuentemente
+    // durante renders reactivos. Sin debounce se envía un mensaje al background
+    // en cada micro-mutación, saturando el canal de mensajes.
+    let _scanDebounceTimer = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(_scanDebounceTimer);
+      _scanDebounceTimer = setTimeout(() => window.WA.scanner.scanUnreadChats(), 300);
+    });
     let observerContainer = null;
 
     const tryObserve = () => {
@@ -43,8 +50,8 @@ window.WA = window.WA || {};
     };
 
     tryObserve();
-    setInterval(tryObserve, 2000);
-    setTimeout(window.WA.scanner.scanUnreadChats, 200);
+    const _tryObserveInterval = setInterval(tryObserve, 2000); // eslint-disable-line no-unused-vars
+    setTimeout(() => window.WA.scanner.scanUnreadChats(), 200);
 
     if (isBackground) {
       console.log('[WA Sidebar] Ejecutando en segundo plano (modo notificaciones).');
@@ -53,9 +60,9 @@ window.WA = window.WA || {};
 
     console.log('[WA Sidebar] Ejecutando en la barra lateral interactiva.');
     setInterval(() => {
-      window.WA.resizer.setupResizer(); 
-      window.WA.resizer.checkCollapseState(); 
-      window.WA.miniChats.renderMiniChats(); 
+      window.WA.resizer?.setupResizer?.();
+      window.WA.resizer?.checkCollapseState?.();
+      window.WA.miniChats?.renderMiniChats?.();
     }, 500);
   }
 

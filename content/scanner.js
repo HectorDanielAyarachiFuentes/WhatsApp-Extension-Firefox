@@ -5,6 +5,10 @@
  */
 window.WA = window.WA || {};
 
+// Timer único para re-escaneo diferido — evita crear múltiples setTimeout
+// cuando varios contactos están en ignoredContacts al mismo tiempo.
+let _pendingRescanTimer = null;
+
 window.WA.scanner = {
   scanUnreadChats: function() {
     const unreadChats = [];
@@ -27,11 +31,16 @@ window.WA.scanner = {
         if (window.WA.state.ignoredContacts.has(name)) {
           const timeIgnored = Date.now() - window.WA.state.ignoredContacts.get(name);
           if (timeIgnored < 5000) {
-            setTimeout(() => {
-              if (window.WA.scanner && window.WA.scanner.scanUnreadChats) {
-                window.WA.scanner.scanUnreadChats();
-              }
-            }, 5000 - timeIgnored + 100);
+            // Programar un solo re-escaneo cuando expire el primer contacto ignorado.
+            // Si ya hay uno pendiente no hace falta crear otro.
+            if (!_pendingRescanTimer) {
+              _pendingRescanTimer = setTimeout(() => {
+                _pendingRescanTimer = null;
+                if (window.WA.scanner && window.WA.scanner.scanUnreadChats) {
+                  window.WA.scanner.scanUnreadChats();
+                }
+              }, 5000 - timeIgnored + 100);
+            }
             return;
           } else {
             window.WA.state.ignoredContacts.delete(name);
