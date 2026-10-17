@@ -60,6 +60,33 @@ window.WA = window.WA || {};
       }
     }, 2500);
 
+    // Combo Opción 2: Al presionar "Activar", dejamos que WhatsApp ejecute su sincronización
+    // real de mensajes, y 400ms después se simula el clic en la 'X' para que WhatsApp guarde
+    // la bandera permanente de descarte y no vuelva a mostrar el cartel nunca más.
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!target) return;
+      const text = (target.textContent || '').trim().toLowerCase();
+      if (text === 'activar' || text.startsWith('activar')) {
+        const card = target.closest('div');
+        const cardContainer = card ? card.closest('div[role="alert"], div[role="region"], div') : null;
+        const banner = cardContainer || card;
+        if (banner) {
+          const bannerText = (banner.textContent || '').toLowerCase();
+          if (bannerText.includes('sincroniz') || bannerText.includes('segundo plano')) {
+            setTimeout(() => {
+              const closeBtn = banner.querySelector('button:has(svg), [data-icon="x"], [data-testid="x"], [aria-label*="Cerrar"], [aria-label*="Close"]') ||
+                               document.querySelector('[data-icon="x"], [data-testid="x"]');
+              if (closeBtn) {
+                const btn = closeBtn.closest('button') || closeBtn;
+                btn.click?.();
+              }
+            }, 400);
+          }
+        }
+      }
+    }, true);
+
     if (isBackground) {
       console.log('[WA Sidebar] Ejecutando en segundo plano (modo notificaciones).');
       return;

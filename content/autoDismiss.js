@@ -65,51 +65,22 @@
     return false;
   }
 
-  /**
-   * Cierra automáticamente el cartel de "Sincronización en segundo plano"
-   * (función de Chrome no soportada por Firefox que WhatsApp muestra en bucle).
-   */
-  function tryDismissBackgroundSync() {
-    const banners = document.querySelectorAll('div, [role="alert"], [role="region"], [role="status"]');
-    for (const el of banners) {
-      if (el.children.length > 8) continue;
-      const text = (el.textContent || '').toLowerCase();
-      if (
-        (text.includes('sincronización') || text.includes('sincroniza') || text.includes('sync')) &&
-        (text.includes('segundo plano') || text.includes('background') || text.includes('rendimiento más rápido'))
-      ) {
-        const closeBtn = el.querySelector('button, [data-icon="x"], [data-testid="x"], [aria-label*="Cerrar"], [aria-label*="Close"]');
-        if (closeBtn) {
-          console.log('[WA] Auto-dismiss: cerrando cartel de sincronización.');
-          const target = closeBtn.closest('button') || closeBtn;
-          target.click?.();
-        }
-        el.style.setProperty('display', 'none', 'important');
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function handleAllDismissals() {
-    tryDismiss();
-    tryDismissBackgroundSync();
-  }
-
-  // ─── MutationObserver — catches dialogs the instant they enter the DOM ──
-  const observer = new MutationObserver(handleAllDismissals);
+  // ─── MutationObserver — catches the dialog the instant it enters the DOM ──
+  const observer = new MutationObserver(tryDismiss);
   observer.observe(document.documentElement || document, {
     childList: true,
     subtree: true,
   });
 
-  // ─── Periodic fallback ───
-  const interval = setInterval(handleAllDismissals, 1000);
+  // ─── Periodic fallback — in case Shadow DOM or async renders are missed ───
+  const interval = setInterval(() => {
+    if (tryDismiss()) clearInterval(interval);
+  }, 1000);
 
-  // Clean up interval after 2 minutes
+  // Clean up interval after 2 minutes (dialog is long gone by then)
   setTimeout(() => clearInterval(interval), 120_000);
 
   // Try immediately in case dialog is already rendered
-  handleAllDismissals();
+  tryDismiss();
 })();
 
