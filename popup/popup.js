@@ -114,34 +114,76 @@ function getInitials(name) {
     contactRow.appendChild(contactMeta);
     card.appendChild(contactRow);
 
-    // Burbuja de mensaje
-    const bubbleWrap = document.createElement('div');
-    bubbleWrap.className = 'preview-bubble-wrap';
+    // --- Burbujas de mensaje: una por cada mensaje no leído (máx 6) ---
+    // Solo tenemos el texto del último mensaje desde la lista de WhatsApp Web.
+    // Las burbujas anteriores se muestran como mensajes previos con puntos animados
+    // o con el texto previo si se capturó en el historial.
+    const totalBubbles = Math.min(chat.count, 6);
+    const history = Array.isArray(chat.history) ? chat.history : [];
+    const unknownCount = Math.max(0, totalBubbles - Math.max(1, history.length));
 
-    const bubble = document.createElement('div');
-    bubble.className = 'preview-bubble';
+    for (let b = 0; b < totalBubbles; b++) {
+      const isLast = (b === totalBubbles - 1);
+      const isUnknown = (b < unknownCount);
 
-    if (chat.preview) {
-      const msgEl = document.createElement('div');
-      msgEl.className = 'preview-message';
-      msgEl.textContent = chat.preview;
-      bubble.appendChild(msgEl);
-    } else {
-      const noMsg = document.createElement('div');
-      noMsg.className = 'preview-no-msg';
-      noMsg.textContent = 'Vista previa no disponible';
-      bubble.appendChild(noMsg);
+      const bubbleWrap = document.createElement('div');
+      bubbleWrap.className = 'preview-bubble-wrap';
+
+      const bubble = document.createElement('div');
+      bubble.className = isLast ? 'preview-bubble' : (isUnknown ? 'preview-bubble preview-bubble-older' : 'preview-bubble');
+
+      if (isLast) {
+        // Última burbuja: muestra el preview real
+        if (chat.preview) {
+          const msgEl = document.createElement('div');
+          msgEl.className = 'preview-message';
+          msgEl.textContent = chat.preview;
+          bubble.appendChild(msgEl);
+        } else {
+          const noMsg = document.createElement('div');
+          noMsg.className = 'preview-no-msg';
+          noMsg.textContent = 'Vista previa no disponible';
+          bubble.appendChild(noMsg);
+        }
+
+        // Footer con hora
+        const bubbleFooter = document.createElement('div');
+        bubbleFooter.className = 'preview-bubble-footer';
+        const footerTime = document.createElement('span');
+        footerTime.textContent = chat.time || '';
+        bubbleFooter.appendChild(footerTime);
+        bubble.appendChild(bubbleFooter);
+      } else if (!isUnknown) {
+        // Mensaje anterior con texto conocido
+        const histIndex = b - unknownCount;
+        const msgEl = document.createElement('div');
+        msgEl.className = 'preview-message';
+        msgEl.textContent = history[histIndex] || '...';
+        bubble.appendChild(msgEl);
+      } else {
+        // Burbujas anteriores sin texto disponible: puntos animados estilo WhatsApp
+        const dotsEl = document.createElement('div');
+        dotsEl.className = 'preview-dots';
+        for (let d = 0; d < 3; d++) {
+          const dot = document.createElement('span');
+          dot.className = 'dot';
+          dot.style.animationDelay = `${d * 0.18}s`;
+          dotsEl.appendChild(dot);
+        }
+        bubble.appendChild(dotsEl);
+      }
+
+      bubbleWrap.appendChild(bubble);
+      card.appendChild(bubbleWrap);
     }
 
-    // Footer de burbuja (hora + ticks)
-    const bubbleFooter = document.createElement('div');
-    bubbleFooter.className = 'preview-bubble-footer';
-    const footerTime = document.createElement('span');
-    footerTime.textContent = chat.time || '';
-    bubbleFooter.appendChild(footerTime);
-    bubble.appendChild(bubbleFooter);
-    bubbleWrap.appendChild(bubble);
-    card.appendChild(bubbleWrap);
+    // Si hay más de 6 mensajes, indicador de overflow
+    if (chat.count > 6) {
+      const moreEl = document.createElement('div');
+      moreEl.className = 'preview-more';
+      moreEl.textContent = `+ ${chat.count - 6} mensajes anteriores`;
+      card.appendChild(moreEl);
+    }
 
     // --- Respuesta Rápida ---
     const replyContainer = document.createElement('div');
@@ -232,8 +274,8 @@ function getInitials(name) {
           const msg = card.querySelector('.preview-message');
           if (msg && chat.preview) msg.textContent = chat.preview;
           
-          const countEl = card.querySelector('.preview-count');
-          if (countEl) countEl.textContent = `${chat.count} mensaje(s) sin leer`;
+          const countEl = card.querySelector('.preview-count-badge');
+          if (countEl) countEl.textContent = `${chat.count} msg`;
         }
       });
     }

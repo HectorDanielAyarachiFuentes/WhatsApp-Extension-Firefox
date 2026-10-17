@@ -69,12 +69,28 @@ window.WA.dom = {
   extractMessagePreview: function(chatRow) {
     const secondary = chatRow.querySelector('[data-testid="cell-frame-secondary"]');
     if (secondary) {
-      const textContent = secondary.textContent.trim();
+      // Clona para no alterar el DOM original de WhatsApp
+      const clone = secondary.cloneNode(true);
+
+      // Eliminar badges de no leídos, iconos y contadores para que no se peguen al texto (ej. ".3")
+      const badges = clone.querySelectorAll(
+        (window.WA.SELECTORS && window.WA.SELECTORS.unreadBadge ? window.WA.SELECTORS.unreadBadge + ',' : '') +
+        '[data-testid="icon-unread-count"], [aria-label*="no leí"], [aria-label*="unread"], [aria-label*="sin leer"], span[class*="unread"]'
+      );
+      badges.forEach(b => b.remove());
+
+      // Intentar primero extraer el texto del span de previsualización directamente
+      const textSpan = clone.querySelector('span[dir="ltr"], span[dir="auto"], span[title]');
+      const rawText = textSpan ? (textSpan.getAttribute('title') || textSpan.textContent) : clone.textContent;
+      const textContent = (rawText || '').trim();
+
       if (textContent && textContent.length > 1) {
-        const cleaned = textContent
+        let cleaned = textContent
           .replace(/\d{1,2}:\d{2}\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/gi, '')
           .replace(/^(ayer|hoy|lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s*/i, '')
           .trim();
+        // Limpiar cualquier residuo de número de badge pegado al final (ej: "DNI.3" -> "DNI.")
+        cleaned = cleaned.replace(/(\.|\s)\d+$/, '$1').trim();
         if (cleaned.length > 1) return cleaned;
       }
     }

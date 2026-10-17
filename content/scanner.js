@@ -50,8 +50,18 @@ window.WA.scanner = {
         const preview = window.WA.dom.extractMessagePreview(chatRow);
         const time = window.WA.dom.extractTime(chatRow);
 
+        if (!window.WA.state.messageHistory) {
+          window.WA.state.messageHistory = new Map();
+        }
+        let history = window.WA.state.messageHistory.get(name) || [];
+        if (preview && !history.includes(preview)) {
+          history.push(preview);
+          if (history.length > 6) history.shift();
+          window.WA.state.messageHistory.set(name, history);
+        }
+
         if (!unreadChats.find(c => c.name === name)) {
-          unreadChats.push({ name, count, preview, time });
+          unreadChats.push({ name, count, preview, time, history: [...history] });
         }
       });
 
