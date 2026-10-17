@@ -5,6 +5,26 @@
  */
 // popup.js — Lógica del popup de previsualización
 
+// ─── Helpers de avatar ────────────────────────────────────────────────────────
+/** Genera un color de fondo determinista a partir del nombre del contacto */
+function getAvatarColor(name) {
+  const PALETTE = [
+    '#D32F2F','#C2185B','#7B1FA2','#512DA8',
+    '#1976D2','#0288D1','#00796B','#388E3C',
+    '#F57C00','#5D4037','#455A64','#E91E63',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return PALETTE[Math.abs(hash) % PALETTE.length];
+}
+
+/** Extrae hasta 2 iniciales de un nombre */
+function getInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 (async function () {
   const tabsContainer = document.getElementById('tabs-container');
   const previewContainer = document.getElementById('preview-container');
@@ -28,10 +48,18 @@
 
   // Crear una pestaña y un panel de preview por cada contacto
   chats.forEach((chat, index) => {
+    const avatarColor = getAvatarColor(chat.name);
+    const initials   = getInitials(chat.name);
+
     // --- Tab ---
     const tab = document.createElement('div');
     tab.className = 'tab' + (index === 0 ? ' active' : '');
     tab.dataset.index = index;
+
+    const tabAvatar = document.createElement('div');
+    tabAvatar.className = 'tab-avatar';
+    tabAvatar.style.background = avatarColor;
+    tabAvatar.textContent = initials;
 
     const tabName = document.createElement('span');
     tabName.className = 'tab-name';
@@ -41,6 +69,7 @@
     tabBadge.className = 'tab-badge';
     tabBadge.textContent = chat.count;
 
+    tab.appendChild(tabAvatar);
     tab.appendChild(tabName);
     tab.appendChild(tabBadge);
     tabsContainer.appendChild(tab);
@@ -50,40 +79,69 @@
     card.className = 'preview-card' + (index === 0 ? ' active' : '');
     card.dataset.index = index;
 
-    // Header del preview
-    const header = document.createElement('div');
-    header.className = 'preview-header';
+    // Fila de contacto: avatar grande + meta
+    const contactRow = document.createElement('div');
+    contactRow.className = 'preview-contact-row';
 
-    const name = document.createElement('span');
-    name.className = 'preview-name';
-    name.textContent = chat.name;
+    const avatar = document.createElement('div');
+    avatar.className = 'contact-avatar';
+    avatar.style.background = avatarColor;
+    avatar.textContent = initials;
 
-    const time = document.createElement('span');
-    time.className = 'preview-time';
-    time.textContent = chat.time || '';
+    const contactMeta = document.createElement('div');
+    contactMeta.className = 'contact-meta';
 
-    header.appendChild(name);
-    header.appendChild(time);
-    card.appendChild(header);
+    const nameEl = document.createElement('div');
+    nameEl.className = 'preview-name';
+    nameEl.textContent = chat.name;
 
-    // Conteo
-    const countInfo = document.createElement('div');
-    countInfo.className = 'preview-count';
-    countInfo.textContent = `${chat.count} mensaje(s) sin leer`;
-    card.appendChild(countInfo);
+    const metaRow = document.createElement('div');
+    metaRow.className = 'preview-meta-row';
 
-    // Mensaje preview
+    const timeEl = document.createElement('span');
+    timeEl.className = 'preview-time';
+    timeEl.textContent = chat.time || '';
+
+    const countBadge = document.createElement('span');
+    countBadge.className = 'preview-count-badge';
+    countBadge.textContent = `${chat.count} msg`;
+
+    metaRow.appendChild(timeEl);
+    metaRow.appendChild(countBadge);
+    contactMeta.appendChild(nameEl);
+    contactMeta.appendChild(metaRow);
+    contactRow.appendChild(avatar);
+    contactRow.appendChild(contactMeta);
+    card.appendChild(contactRow);
+
+    // Burbuja de mensaje
+    const bubbleWrap = document.createElement('div');
+    bubbleWrap.className = 'preview-bubble-wrap';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'preview-bubble';
+
     if (chat.preview) {
-      const msg = document.createElement('div');
-      msg.className = 'preview-message';
-      msg.textContent = chat.preview;
-      card.appendChild(msg);
+      const msgEl = document.createElement('div');
+      msgEl.className = 'preview-message';
+      msgEl.textContent = chat.preview;
+      bubble.appendChild(msgEl);
     } else {
       const noMsg = document.createElement('div');
       noMsg.className = 'preview-no-msg';
       noMsg.textContent = 'Vista previa no disponible';
-      card.appendChild(noMsg);
+      bubble.appendChild(noMsg);
     }
+
+    // Footer de burbuja (hora + ticks)
+    const bubbleFooter = document.createElement('div');
+    bubbleFooter.className = 'preview-bubble-footer';
+    const footerTime = document.createElement('span');
+    footerTime.textContent = chat.time || '';
+    bubbleFooter.appendChild(footerTime);
+    bubble.appendChild(bubbleFooter);
+    bubbleWrap.appendChild(bubble);
+    card.appendChild(bubbleWrap);
 
     // --- Respuesta Rápida ---
     const replyContainer = document.createElement('div');
@@ -96,7 +154,7 @@
 
     const replyBtn = document.createElement('button');
     replyBtn.className = 'quick-reply-btn';
-    replyBtn.innerHTML = '➤'; // Icono de flecha (enviar)
+    replyBtn.innerHTML = '&#10148;'; // flecha enviar
 
     // Lógica para enviar
     const handleSend = async () => {
@@ -105,7 +163,7 @@
 
       replyInput.disabled = true;
       replyBtn.disabled = true;
-      replyBtn.innerHTML = '...';
+      replyBtn.textContent = '…';
 
       // Enviar la orden al background
       const result = await browser.runtime.sendMessage({
@@ -117,14 +175,12 @@
       if (result && result.success) {
         replyInput.value = '';
         replyInput.placeholder = 'Enviado ✓';
-        replyBtn.innerHTML = '✔';
-        setTimeout(() => {
-          window.close(); // Cerramos el popup después de enviar exitosamente (como no especificó, asumimos buen UX)
-        }, 800);
+        replyBtn.innerHTML = '&#10003;';
+        setTimeout(() => { window.close(); }, 800);
       } else {
         replyInput.disabled = false;
         replyBtn.disabled = false;
-        replyBtn.innerHTML = '➤';
+        replyBtn.innerHTML = '&#10148;';
         replyInput.placeholder = 'Error al enviar: abre WhatsApp en sidebar';
         replyInput.classList.add('error');
         setTimeout(() => {
@@ -147,11 +203,8 @@
 
     // --- Click en tab ---
     tab.addEventListener('click', () => {
-      // Desactivar todas las tabs y cards
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.preview-card').forEach(c => c.classList.remove('active'));
-
-      // Activar la seleccionada
       tab.classList.add('active');
       card.classList.add('active');
     });
