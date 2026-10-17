@@ -49,6 +49,7 @@ window.WA.scanner = {
 
         const preview = window.WA.dom.extractMessagePreview(chatRow);
         const time = window.WA.dom.extractTime(chatRow);
+        const avatarUrl = window.WA.dom.extractAvatarUrl(chatRow);
 
         if (!window.WA.state.messageHistory) {
           window.WA.state.messageHistory = new Map();
@@ -61,7 +62,7 @@ window.WA.scanner = {
         }
 
         if (!unreadChats.find(c => c.name === name)) {
-          unreadChats.push({ name, count, preview, time, history: [...history] });
+          unreadChats.push({ name, count, preview, time, avatarUrl, history: [...history] });
         }
       });
 

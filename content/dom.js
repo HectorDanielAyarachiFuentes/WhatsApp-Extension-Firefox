@@ -66,6 +66,19 @@ window.WA.dom = {
     return null;
   },
 
+  extractAvatarUrl: function(chatRow) {
+    try {
+      const avatarContainer = chatRow.querySelector('[data-testid*="avatar"], [class*="avatar"]') || chatRow.firstElementChild;
+      const img = avatarContainer ? avatarContainer.querySelector('img[src]') : chatRow.querySelector('img[src]');
+      if (img && img.src) {
+        if (img.src.includes('whatsapp.net') || img.src.startsWith('blob:') || img.src.startsWith('data:image/')) {
+          return img.src;
+        }
+      }
+    } catch (e) {}
+    return null;
+  },
+
   extractMessagePreview: function(chatRow) {
     const secondary = chatRow.querySelector('[data-testid="cell-frame-secondary"]');
     if (secondary) {

@@ -411,9 +411,9 @@ browser.runtime.onConnect.addListener((port) => {
     console.log('[WA Background] Sidebar cerrado.');
     sidebarPort = null;
 
-    // Recargar el iframe de fondo después de que el sidebar termine de cerrar.
+    // Recargar el iframe de fondo rápidamente después de que el sidebar termine de cerrar.
     // En ese momento no hay otra instancia de WhatsApp activa → reconecta sin diálogo.
-    setTimeout(reloadBackgroundIframe, 3000);
+    setTimeout(reloadBackgroundIframe, 700);
   });
 });
 

@@ -213,5 +213,12 @@ div[style*="position: absolute"][style*="left: 0"] {
     z-index: 10 !important;
 }
 
+/* Ocultar cartel de sincronización en segundo plano de WhatsApp Web (incompatible con Firefox) */
+div[data-testid*="background-sync"],
+div:has(> * [data-icon="x"]):has(> * [data-icon*="sync"]),
+div:has(> * [data-icon="x"]):has(> * [data-icon*="refresh"]) {
+    display: none !important;
+}
+
 
 

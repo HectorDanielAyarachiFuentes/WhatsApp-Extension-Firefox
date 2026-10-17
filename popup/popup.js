@@ -25,12 +25,70 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
+/** Crea un elemento avatar (imagen real del contacto si existe, o iniciales con color como fallback) */
+function createAvatarElement(avatarUrl, name, baseClass) {
+  const avatarColor = getAvatarColor(name);
+  const initials   = getInitials(name);
+
+  if (avatarUrl) {
+    const img = document.createElement('img');
+    img.className = baseClass + '-img';
+    img.src = avatarUrl;
+    img.alt = name;
+    img.onerror = function () {
+      const fallback = document.createElement('div');
+      fallback.className = baseClass;
+      fallback.style.background = avatarColor;
+      fallback.textContent = initials;
+      this.replaceWith(fallback);
+    };
+    return img;
+  }
+
+  const el = document.createElement('div');
+  el.className = baseClass;
+  el.style.background = avatarColor;
+  el.textContent = initials;
+  return el;
+}
+
 (async function () {
   const tabsContainer = document.getElementById('tabs-container');
   const previewContainer = document.getElementById('preview-container');
   const headerCount = document.getElementById('header-count');
   const previewEmpty = document.getElementById('preview-empty');
   const openBtn = document.getElementById('open-whatsapp');
+
+  // Soporte de rueda del ratón (mouse wheel) para scroll horizontal fluido
+  tabsContainer.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0) {
+      e.preventDefault();
+      tabsContainer.scrollLeft += (e.deltaY * 0.9);
+    }
+  }, { passive: false });
+
+  // Soporte de arrastre suave con ratón (drag to scroll)
+  let isDragging = false;
+  let startX = 0;
+  let scrollStart = 0;
+
+  tabsContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startX = e.pageX - tabsContainer.offsetLeft;
+    scrollStart = tabsContainer.scrollLeft;
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  tabsContainer.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - tabsContainer.offsetLeft;
+    const walk = (x - startX) * 1.3;
+    tabsContainer.scrollLeft = scrollStart - walk;
+  });
 
   // Pedir los datos al background script
   const response = await browser.runtime.sendMessage({ type: 'get_unread' });
@@ -48,22 +106,17 @@ function getInitials(name) {
 
   // Crear una pestaña y un panel de preview por cada contacto
   chats.forEach((chat, index) => {
-    const avatarColor = getAvatarColor(chat.name);
-    const initials   = getInitials(chat.name);
-
     // --- Tab ---
     const tab = document.createElement('div');
     tab.className = 'tab' + (index === 0 ? ' active' : '');
     tab.dataset.index = index;
 
-    const tabAvatar = document.createElement('div');
-    tabAvatar.className = 'tab-avatar';
-    tabAvatar.style.background = avatarColor;
-    tabAvatar.textContent = initials;
+    const tabAvatar = createAvatarElement(chat.avatarUrl, chat.name, 'tab-avatar');
 
     const tabName = document.createElement('span');
     tabName.className = 'tab-name';
     tabName.textContent = chat.name;
+    tabName.title = chat.name; // Tooltip con nombre completo
 
     const tabBadge = document.createElement('span');
     tabBadge.className = 'tab-badge';
@@ -83,10 +136,7 @@ function getInitials(name) {
     const contactRow = document.createElement('div');
     contactRow.className = 'preview-contact-row';
 
-    const avatar = document.createElement('div');
-    avatar.className = 'contact-avatar';
-    avatar.style.background = avatarColor;
-    avatar.textContent = initials;
+    const avatar = createAvatarElement(chat.avatarUrl, chat.name, 'contact-avatar');
 
     const contactMeta = document.createElement('div');
     contactMeta.className = 'contact-meta';
@@ -114,74 +164,55 @@ function getInitials(name) {
     contactRow.appendChild(contactMeta);
     card.appendChild(contactRow);
 
-    // --- Burbujas de mensaje: una por cada mensaje no leído (máx 6) ---
-    // Solo tenemos el texto del último mensaje desde la lista de WhatsApp Web.
-    // Las burbujas anteriores se muestran como mensajes previos con puntos animados
-    // o con el texto previo si se capturó en el historial.
-    const totalBubbles = Math.min(chat.count, 6);
-    const history = Array.isArray(chat.history) ? chat.history : [];
-    const unknownCount = Math.max(0, totalBubbles - Math.max(1, history.length));
+    // --- Burbujas de mensaje: solo mensajes con texto real ---
+    // Si tenemos varios mensajes en el historial (capturados en tiempo real), mostramos cada uno con su texto.
+    // Si WhatsApp solo entrega el último en el listado, mostramos limpiamente ese mensaje con su texto completo.
+    const history = Array.isArray(chat.history) ? chat.history.filter(m => m && m.trim()) : [];
+    let messagesToShow = [];
 
-    for (let b = 0; b < totalBubbles; b++) {
-      const isLast = (b === totalBubbles - 1);
-      const isUnknown = (b < unknownCount);
+    if (history.length > 1) {
+      messagesToShow = history;
+    } else if (chat.preview) {
+      messagesToShow = [chat.preview];
+    }
+
+    if (messagesToShow.length === 0) {
+      messagesToShow = ['Vista previa no disponible'];
+    }
+
+    messagesToShow.forEach((text, b) => {
+      const isLast = (b === messagesToShow.length - 1);
 
       const bubbleWrap = document.createElement('div');
       bubbleWrap.className = 'preview-bubble-wrap';
 
       const bubble = document.createElement('div');
-      bubble.className = isLast ? 'preview-bubble' : (isUnknown ? 'preview-bubble preview-bubble-older' : 'preview-bubble');
+      bubble.className = 'preview-bubble';
 
+      const msgEl = document.createElement('div');
+      msgEl.className = 'preview-message';
+      msgEl.textContent = text;
+      bubble.appendChild(msgEl);
+
+      // Solo la última burbuja lleva el footer con la hora
       if (isLast) {
-        // Última burbuja: muestra el preview real
-        if (chat.preview) {
-          const msgEl = document.createElement('div');
-          msgEl.className = 'preview-message';
-          msgEl.textContent = chat.preview;
-          bubble.appendChild(msgEl);
-        } else {
-          const noMsg = document.createElement('div');
-          noMsg.className = 'preview-no-msg';
-          noMsg.textContent = 'Vista previa no disponible';
-          bubble.appendChild(noMsg);
-        }
-
-        // Footer con hora
         const bubbleFooter = document.createElement('div');
         bubbleFooter.className = 'preview-bubble-footer';
         const footerTime = document.createElement('span');
         footerTime.textContent = chat.time || '';
         bubbleFooter.appendChild(footerTime);
         bubble.appendChild(bubbleFooter);
-      } else if (!isUnknown) {
-        // Mensaje anterior con texto conocido
-        const histIndex = b - unknownCount;
-        const msgEl = document.createElement('div');
-        msgEl.className = 'preview-message';
-        msgEl.textContent = history[histIndex] || '...';
-        bubble.appendChild(msgEl);
-      } else {
-        // Burbujas anteriores sin texto disponible: puntos animados estilo WhatsApp
-        const dotsEl = document.createElement('div');
-        dotsEl.className = 'preview-dots';
-        for (let d = 0; d < 3; d++) {
-          const dot = document.createElement('span');
-          dot.className = 'dot';
-          dot.style.animationDelay = `${d * 0.18}s`;
-          dotsEl.appendChild(dot);
-        }
-        bubble.appendChild(dotsEl);
       }
 
       bubbleWrap.appendChild(bubble);
       card.appendChild(bubbleWrap);
-    }
+    });
 
-    // Si hay más de 6 mensajes, indicador de overflow
-    if (chat.count > 6) {
+    // Si hay más mensajes sin leer que los que WhatsApp expone en su lista
+    if (chat.count > messagesToShow.length) {
       const moreEl = document.createElement('div');
       moreEl.className = 'preview-more';
-      moreEl.textContent = `+ ${chat.count - 6} mensajes anteriores`;
+      moreEl.textContent = `(Hay ${chat.count} mensajes sin leer en este chat · Mostrando los capturados)`;
       card.appendChild(moreEl);
     }
 
@@ -249,6 +280,7 @@ function getInitials(name) {
       document.querySelectorAll('.preview-card').forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
       card.classList.add('active');
+      tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     });
   });
 
@@ -258,7 +290,7 @@ function getInitials(name) {
     window.close(); // Cerrar el popup
   });
 
-  // Refrescar datos cada 5 segundos
+  // Refrescar datos rápidamente cada 1.5 segundos
   setInterval(async () => {
     const fresh = await browser.runtime.sendMessage({ type: 'get_unread' });
     if (fresh && fresh.chats) {
@@ -279,5 +311,5 @@ function getInitials(name) {
         }
       });
     }
-  }, 5000);
+  }, 1500);
 })();

@@ -19,10 +19,10 @@ window.WA = window.WA || {};
       console.log('[WA Sidebar] WhatsApp detectado, iniciando escaneo...');
       init();
     }
-    if (initAttempts > 60) {
+    if (initAttempts > 300) {
       clearInterval(waitForApp);
     }
-  }, 2000);
+  }, 400);
 
   function init() {
     const isBackground = (window.name === 'wa-background-iframe');
@@ -33,7 +33,7 @@ window.WA = window.WA || {};
     let _scanDebounceTimer = null;
     const observer = new MutationObserver(() => {
       clearTimeout(_scanDebounceTimer);
-      _scanDebounceTimer = setTimeout(() => window.WA.scanner.scanUnreadChats(), 300);
+      _scanDebounceTimer = setTimeout(() => window.WA.scanner.scanUnreadChats(), 250);
     });
     let observerContainer = null;
 
@@ -50,8 +50,15 @@ window.WA = window.WA || {};
     };
 
     tryObserve();
-    const _tryObserveInterval = setInterval(tryObserve, 2000); // eslint-disable-line no-unused-vars
-    setTimeout(() => window.WA.scanner.scanUnreadChats(), 200);
+    const _tryObserveInterval = setInterval(tryObserve, 1500); // eslint-disable-line no-unused-vars
+    setTimeout(() => window.WA.scanner.scanUnreadChats(), 150);
+
+    // Heartbeat periódico para garantizar detección rápida de mensajes incluso si el navegador throttling los eventos
+    setInterval(() => {
+      if (window.WA.scanner && window.WA.scanner.scanUnreadChats) {
+        window.WA.scanner.scanUnreadChats();
+      }
+    }, 2500);
 
     if (isBackground) {
       console.log('[WA Sidebar] Ejecutando en segundo plano (modo notificaciones).');
