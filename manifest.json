@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WhatsApp Sidebar",
-  "version": "1.0.8",
-  "description": "Abre WhatsApp Web en la barra lateral de Firefox.",
+  "version": "1.0.9",
+  "description": "Abre WhatsApp Web en la barra lateral de Firefox. Complemento no oficial sin afiliación a WhatsApp o Meta.",
   "browser_specific_settings": {
     "gecko": {
       "id": "wasap-extension-firefgo@ayarachi.com",
@@ -17,14 +17,14 @@
   "sidebar_action": {
     "default_title": "WhatsApp",
     "default_panel": "sidebar/sidebar.html",
-    "default_icon": "icons/WhatsApp.svg"
+    "default_icon": "icons/icon.svg"
   },
   "icons": {
-    "48": "icons/WhatsApp.svg",
-    "96": "icons/WhatsApp.svg"
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
   },
   "action": {
-    "default_icon": "icons/WhatsApp.svg",
+    "default_icon": "icons/icon.svg",
     "default_title": "Abrir WhatsApp"
   },
   "background": {

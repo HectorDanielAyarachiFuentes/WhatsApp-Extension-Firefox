@@ -58,7 +58,7 @@ browser.action.onClicked.addListener(() => {
   if (sidebarPort) {
     browser.notifications.create({
       type: 'basic',
-      iconUrl: browser.runtime.getURL('icons/WhatsApp.svg'),
+      iconUrl: browser.runtime.getURL('icons/icon.svg'),
       title: 'Botón superior presionado',
       message: 'La barra lateral ya está abierta. Enviando orden de expandir/colapsar al contenido.'
     });
@@ -67,7 +67,7 @@ browser.action.onClicked.addListener(() => {
   } else {
     browser.notifications.create({
       type: 'basic',
-      iconUrl: browser.runtime.getURL('icons/WhatsApp.svg'),
+      iconUrl: browser.runtime.getURL('icons/icon.svg'),
       title: 'Botón superior presionado',
       message: 'La barra estaba cerrada. Abriendo barra lateral.'
     });
@@ -102,7 +102,7 @@ browser.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-const ICON_NORMAL = 'icons/WhatsApp.svg';
+const ICON_NORMAL = 'icons/icon.svg';
 
 function updateUnreadUI(oldChats) {
   const totalContacts = unreadChats.length;
